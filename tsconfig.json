@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    // A Node program, unlike the rest of the train: NodeNext makes tsc refuse a
+    // relative import without its `.js`, which Node ESM would throw on.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2024"],
+    // `@types/node` tracks `engines`, so an API newer than the oldest Node a
+    // user may run fails here rather than on their machine.
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true
+  },
+  // Specs included: eslint's type-aware pass resolves each file to its
+  // *nearest* tsconfig, so a co-located spec excluded here has no project at
+  // all and fails to parse. `tsconfig.build.json` holds them out of `dist`.
+  "include": ["src/**/*.ts"]
+}
