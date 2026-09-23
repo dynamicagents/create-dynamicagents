@@ -1,0 +1,59 @@
+name: Test
+
+# A PR runs the suite before it merges, and Release keys off the run Test
+# completes on `main`. Why a merge to `main` ships nothing until it carries a
+# bump is AGENTS.md's, under Publishing.
+on:
+  push:
+    branches:
+      - main
+  # Every pull request, not only those into `main`. A stacked PR targets its
+  # parent, and a `branches: [main]` filter reports "no checks" on it; when the
+  # parent merges, GitHub's retarget fires `edited`, which is not a default
+  # event, so the branch could reach `main` having never been tested.
+  pull_request:
+
+# Superseded PR runs are cancelled; main is not, because Release keys off the
+# run that Test completes there.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v6
+        with:
+          # One source of truth with local dev; `engines` requires >=24.
+          node-version-file: .nvmrc
+
+      - run: npm ci
+
+      # `npm test` alone would pass on code that neither typechecks nor formats:
+      # vitest transpiles specs without checking them, and the type-aware
+      # `no-deprecated` rule only runs here. `check` also builds, which the
+      # package gate below reads.
+      - run: npm run check
+
+      - run: npm test
+
+      # `prepack` runs this too, but by then the mistake is already on its way
+      # to npm. See scripts/verify-package.mjs.
+      - run: npm run verify:package
+
+      # What `npm create dynamicagents` does, against the tarball this commit
+      # would publish: install it without devDependencies, outside the repo, and
+      # run its bin. The only check that sees `files` and `bin` the way a user
+      # does.
+      - name: The packed tarball runs
+        run: |
+          set -euo pipefail
+          tarball="$PWD/$(npm pack --silent)"
+          cd "$RUNNER_TEMP"
+          npm exec --yes --package="$tarball" -- create-dynamicagents

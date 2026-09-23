@@ -1,0 +1,57 @@
+{
+  "name": "create-dynamicagents",
+  "version": "0.1.0",
+  "description": "Create gates, leaders and agents on Dynamic Agents: npm create dynamicagents@latest",
+  "keywords": [
+    "create",
+    "scaffold",
+    "cli",
+    "dynamicagents",
+    "ai-agents",
+    "a2a",
+    "cloudflare-workers"
+  ],
+  "license": "Apache-2.0",
+  "author": "Dynamic Agents",
+  "homepage": "https://github.com/dynamicagents/create-dynamicagents#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dynamicagents/create-dynamicagents.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dynamicagents/create-dynamicagents/issues"
+  },
+  "type": "module",
+  "bin": {
+    "create-dynamicagents": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "check": "prettier --check . && eslint . && tsc && npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify:package": "node scripts/verify-package.mjs",
+    "prepack": "npm run build && npm run verify:package",
+    "prepublishOnly": "npm run check && npm test && npm run verify:package",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "eslint": "^10.10.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
