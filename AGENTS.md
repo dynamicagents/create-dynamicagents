@@ -14,9 +14,9 @@ sets the rules:
 - **A Node program, not a Worker.** Unlike the rest of the train it builds with
   `module: NodeNext` and `types: ["node"]`. `engines` and `@types/node` follow
   starter's Node, since what this scaffolds needs that Node anyway.
-- **Logic stays out of `src/cli.ts`.** The bin only reads its arguments and
-  prints; what it prints comes from pure functions a spec can call without a
-  process.
+- **Logic stays out of `src/cli.ts`.** The bin only reads its arguments, asks,
+  and prints; what it asks and prints comes from pure functions and data a
+  spec can reach without a process.
 
 ---
 
