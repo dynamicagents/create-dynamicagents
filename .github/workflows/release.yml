@@ -114,7 +114,7 @@ jobs:
       # attached automatically — public repo, public package — so `--provenance`
       # would only restate it.
       #
-      # `prepack` builds dist and runs verify:exports; `prepublishOnly` re-runs
+      # `prepack` builds dist and runs verify:package; `prepublishOnly` re-runs
       # check and the suite. Both stay: they are the last gate a tarball passes.
       - if: steps.gate.outputs.publish == 'true'
         run: npm publish

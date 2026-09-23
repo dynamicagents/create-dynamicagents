@@ -22,8 +22,12 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 const failures = [];
 const fail = (msg) => failures.push(msg);
 
+// Either quote: prettier keeps `src/` double-quoted, but nothing holds `dist/`
+// to that once a build step other than tsc writes to it.
 const importsIn = (source) =>
-  [...source.matchAll(/(?:from|import)\s*\(?\s*"([^"]+)"/g)].map((m) => m[1]);
+  [...source.matchAll(/(?:from|import)\s*\(?\s*(["'])([^"']+)\1/g)].map(
+    (m) => m[2]
+  );
 
 function* walk(dir) {
   if (!existsSync(dir)) return;
