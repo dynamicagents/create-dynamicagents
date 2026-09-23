@@ -49,11 +49,12 @@ jobs:
 
       # What `npm create dynamicagents` does, against the tarball this commit
       # would publish: install it without devDependencies, outside the repo, and
-      # run its bin. The only check that sees `files` and `bin` the way a user
-      # does.
+      # run its bin. The only check that sees `files`, `bin` and `dependencies`
+      # the way a user does. It names a kind because CI has no TTY to ask in,
+      # and without one the bin exits 1.
       - name: The packed tarball runs
         run: |
           set -euo pipefail
           tarball="$PWD/$(npm pack --silent)"
           cd "$RUNNER_TEMP"
-          npm exec --yes --package="$tarball" -- create-dynamicagents
+          npm exec --yes --package="$tarball" -- create-dynamicagents agent

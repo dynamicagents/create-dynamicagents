@@ -7,7 +7,15 @@ Create gates, leaders and agents on
 npm create dynamicagents@latest
 ```
 
-For now it only says hello; scaffolding comes next. Requires Node 24 or later.
+It asks what you want to build — a gate, a leader or an agent. Scaffolding
+them is a work in progress; follow it at
+[dynamicagents.dev](https://dynamicagents.dev). Requires Node 24 or later.
+
+To skip the question, name what to build:
+
+```bash
+npm create dynamicagents@latest agent
+```
 
 ## License
 
