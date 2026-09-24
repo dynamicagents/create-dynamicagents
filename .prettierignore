@@ -1,2 +1,4 @@
 node_modules/
 dist/
+# Each template is a project with its own prettier, and its own `check` runs it.
+templates/

@@ -1,0 +1,64 @@
+{
+  "name": "leader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Dynamic Agents Leader on Cloudflare Workers, on @dynamicagents/core and @dynamicagents/plugins.",
+  "type": "module",
+  "config": {
+    "deployTag": ""
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "node scripts/deploy.mjs",
+    "types": "wrangler types",
+    "keygen": "da-keys",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "check": "wrangler types --check && prettier --check . && eslint . && tsc && tsc -p test/tsconfig.json && node scripts/verify-references.mjs && node scripts/verify-container-env.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:record": "RECORD=1 vitest run recorded.spec.ts",
+    "verify:container-env": "node scripts/verify-container-env.mjs",
+    "verify:references": "node scripts/verify-references.mjs",
+    "cf": "node scripts/cf.mjs"
+  },
+  "dependencies": {
+    "@a2a-js/sdk": "^1.1.0",
+    "@cloudflare/computer": "^0.3.1",
+    "@cloudflare/shell": "0.4.3",
+    "@dynamicagents/core": "git+https://github.com/dynamicagents/core.git#main",
+    "@dynamicagents/plugins": "git+https://github.com/dynamicagents/plugins.git#main",
+    "@platformatic/vfs": "^0.4.0",
+    "agents": "^0.24.0",
+    "ai": "^7.0.101",
+    "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.12",
+    "workers-ai-provider": "^4.0.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.2.0",
+    "@types/node": "^24.13.6",
+    "eslint": "^10.10.0",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.131.2"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "allowScripts": {
+    "@dynamicagents/core": true,
+    "@dynamicagents/plugins": true,
+    "esbuild": false,
+    "fsevents": false,
+    "sharp": false,
+    "workerd": false,
+    "core-js-pure": false,
+    "@mongodb-js/zstd": false,
+    "github:dynamicagents/core": true,
+    "github:dynamicagents/plugins": true
+  }
+}

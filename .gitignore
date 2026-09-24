@@ -3,3 +3,7 @@ dist/
 *.tsbuildinfo
 *.tgz
 .DS_Store
+
+# `wrangler types` output. A project made from a template generates its own with
+# `npm run types`; a template never ships one.
+templates/**/worker-configuration.d.ts

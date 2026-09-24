@@ -1,0 +1,230 @@
+/**
+ * One Worker, one Leader.
+ *
+ * The agent is the A2A tenant `leader`, routed by `src/index.ts`. Each verified
+ * caller gets its own instance of it: a Durable Object keyed by the caller's
+ * `identity.key`, holding that caller's session, workspace and tasks.
+ *
+ * `name`, the route, the workflow name and any Vectorize index are this
+ * deployment's own — `npm create dynamicagents` sets them from the name you
+ * chose. Each is unique per Cloudflare account, which is why none of them is
+ * shared with another leader.
+ *
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "leader",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-06",
+  "compatibility_flags": ["nodejs_compat"],
+  // The deployment's public origin, and the only one.
+  //
+  // Declared here rather than attached in the dashboard because a deploy that
+  // does not own its own hostname is a deploy that can silently land nowhere:
+  // rename the Worker and the domain keeps serving the script it was attached
+  // to, so the new one is live, healthy, and reachable by nobody.
+  //
+  // `workers_dev` is off, and that is a correctness constraint rather than
+  // tidiness. Core derives the card's interface URL, its `jku` and the token
+  // audience it verifies from `new URL(request.url).origin` — see
+  // `src/index.ts`. A second origin therefore advertises a second audience, and
+  // a gatekeeper token minted for this one does not verify against it. It could
+  // only ever serve a card nobody can call.
+  "workers_dev": false,
+  "routes": [{ "pattern": "leader.agents.example.com", "custom_domain": true }],
+  // Headroom for git, which runs here rather than in the container.
+  //
+  // `@cloudflare/computer/git` is isomorphic-git: SHA-1 and inflate in
+  // JavaScript, on this Worker's CPU budget rather than a container's. Measured
+  // shallow and single-branch, a 485-file repository clones in ~1.1 s and a
+  // 5,456-file monorepo in ~5.5 s wall-clock, most of it network — so the
+  // default 30 s is not close to binding. This is for the repository that is an
+  // order of magnitude past those; a clone that dies at 30 s costs a whole task.
+  "limits": { "cpu_ms": 300000 },
+  "observability": {
+    "enabled": true,
+    // Traces, not just logs. The workspace passes
+    // `createCloudflareObserver({ tracing })` to its `Workspace`, which emits a
+    // span per sync push, sync pull, exec spawn and filesystem operation — and
+    // the sync telemetry alongside it reports what each block of a pull cost.
+    // Those are the only view into how long a container→host sync actually
+    // takes, and without this flag `tracing` is undefined and the observer
+    // silently degrades to a no-op.
+    "traces": {
+      "enabled": true
+    }
+  },
+
+  // No `vars` and no model credential anywhere in this file — the agent reaches
+  // Workers AI through the `AI` binding below, which the platform authenticates.
+
+  // Workers AI backs the round loop and every subtask (via AI Gateway).
+  // `remote: true` reflects reality — Workers AI has no local execution mode and
+  // always hits remote resources — and suppresses wrangler's per-run warning. In
+  // tests the pool-level `remoteBindings: false` (vitest.config.ts) overrides
+  // this and keeps the suite from eagerly opening that remote connection.
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
+
+  // --- plugin-required bindings --------------------------------------------
+  // A plugin cannot add its own wrangler binding, which is the whole reason it
+  // declares `requires`. Each of these is asserted at DO start by
+  // `createAgentRuntime({ env })`, so a missing one fails with a sentence naming
+  // the plugin rather than at the first tool call, inside a request someone is
+  // waiting on.
+
+  // The workspace container, running `computerd` (see Dockerfile). Requires a
+  // PAID Workers plan, and a running Docker daemon wherever `npm run deploy`
+  // runs: the image is built there.
+  //
+  // `class_name` is the Durable Object that *owns* the container, one-to-one:
+  // `@cloudflare/computer` pairs each object's SQLite filesystem with exactly
+  // one container, which is what makes "one workspace per repository" a
+  // structural property rather than a convention.
+  //
+  // `instance_type` is deliberately not "lite": that is the getting-started
+  // default and cannot build a real project. The CPU is the exposure, and it
+  // was measured: on standard-1 (1/2 vCPU, 4 GiB) a one-line README change took
+  // 59 minutes, of which 52 were inside `executeChunk` at **0.0% of Worker
+  // CPU** — the Worker was asleep awaiting this container the whole time.
+  //
+  // Two cores, because subtasks share the parent's container: several run at
+  // once against one checkout, and on a single core they contend rather than
+  // parallelise. It is not the more expensive choice it looks like — Cloudflare
+  // bills memory and disk on *provisioned* resources for as long as an instance
+  // runs, but CPU on *active usage*, so on CPU-bound work a second core costs
+  // the same vCPU-seconds over less wall-clock. Verify that against
+  // `npm run cf -- containers` rather than trusting it.
+  //
+  // Memory is what to trim, because it bills for the whole run. Observed peaks
+  // are ~5 GiB and ~4 GB of disk, so 6 GiB is thin headroom: a workspace killed
+  // for memory means raise `memory_mib` first. Custom types need at least 3 GiB
+  // per vCPU.
+  //
+  // `max_instances` caps *concurrent* instances, not slots that are rented: an
+  // entry bills only for what is running, so raising it costs nothing until
+  // there is work to fill it. One instance serves one caller's repository.
+  //
+  // **`rollout_step_percentage` is 100 because the image and the Worker are one
+  // release.** The library in the Worker and the `computerd` in the image
+  // authenticate each other, so a host refuses a daemon from the other side of a
+  // version line — which means a staged rollout cannot reduce the risk of a bad
+  // image, it can only schedule one. The symptom is `[stage=auth]`, the
+  // container refusing to authenticate — worth knowing, because it names the
+  // image rather than the rollout. It has to be written here because wrangler's
+  // fallback is the hazard: unset, an entry with `max_instances` above one
+  // starts at a 10% step.
+  "containers": [
+    {
+      "class_name": "LeaderWorkspaceDO",
+      "image": "./Dockerfile",
+      "instance_type": { "vcpu": 2, "memory_mib": 6144, "disk_mb": 8000 },
+      "max_instances": 5,
+      "rollout_step_percentage": 100
+    }
+  ],
+
+  // There is deliberately **no R2 bucket here**. The checkout lives in the
+  // workspace object's own SQLite storage, which survives the container and
+  // costs no credential at all. Dependencies live on the container's disk and
+  // are reinstalled by a new one; see `src/workspace/install-plan.ts`.
+
+  // `@dynamicagents/plugins/browser`. Requires a PAID Workers plan; Browser
+  // Rendering is not on the free tier. `remote: true` is required for Quick
+  // Actions under `wrangler dev`.
+  "browser": {
+    "binding": "BROWSER",
+    "remote": true
+  },
+
+  "durable_objects": {
+    "bindings": [
+      // The agent: one object per verified caller (`identity.key`), holding
+      // that caller's SQLite-backed Session — continuous history plus writable
+      // memory.
+      //
+      // `LeaderSubagent` is deliberately absent. It is a managed facet created
+      // beneath `LeaderAgent`, so it needs no binding and no
+      // `new_sqlite_classes` entry; it only has to be exported from
+      // src/index.ts so `ctx.exports` can resolve it by class name. It DOES need
+      // a test-only binding — see the comment in vitest.config.ts.
+      { "class_name": "LeaderAgent", "name": "LeaderAgent" },
+
+      // Not the agent — the workspace. One object per caller per repository,
+      // holding that checkout's filesystem in SQLite and owning the container
+      // that mounts it. Addressed by `idFromName`, never by the caller alone;
+      // see `workspaceName` in `@dynamicagents/plugins/computer`.
+      { "class_name": "LeaderWorkspaceDO", "name": "LEADER_WORKSPACE" },
+
+      // Not the agent, and not optional. Core files every subagent note on the
+      // Task's transcript and posts a link instead of the note, so an agent
+      // Durable Object that starts without this binding throws at `onStart` —
+      // core's `@dynamicagents/core/artifacts` owns the reasoning and the
+      // error names the lines. The class is core's own, re-exported unchanged
+      // from src/index.ts, and one object serves the whole deployment: a
+      // reader arrives holding a token and nothing else, so the object it
+      // reaches cannot be keyed by task.
+      //
+      // Binding it is half the wiring. The links are served by the delegation
+      // at the top of `fetch` in src/index.ts, and without that one an
+      // artifact URL falls through to routes that know nothing about it.
+      { "class_name": "Artifacts", "name": "ARTIFACTS" }
+    ]
+  },
+  // **A tag is applied once, ever.** Anything appended to a tag you have already
+  // deployed is simply never applied: a new class is never created, and the
+  // failure surfaces far from this file — at the first request to the agent, or
+  // at deploy with "New version of script does not export class 'X' which is
+  // depended on by existing Durable Objects". Always add a new tag.
+  //
+  // Removing a class from the code reclaims nothing on its own either: every
+  // object it created keeps its storage, unreachable and still billed, until a
+  // tag lists it in `deleted_classes` — which is irreversible.
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["LeaderAgent", "LeaderWorkspaceDO", "Artifacts"]
+    }
+  ],
+
+  // Async A2A (accept + notify): the Worker accepts a turn synchronously and
+  // hands generation plus the gatekeeper push-notification callback to a durable
+  // Workflow.
+  "workflows": [
+    {
+      "binding": "LEADER_WORKFLOW",
+      "name": "leader",
+      "class_name": "LeaderWorkflow"
+    }
+  ],
+
+  // --- secrets --------------------------------------------------------------
+  // What each of these is lives in `.env.example` — the file an operator fills
+  // in. Declared here because `secrets.required` is what drives type generation
+  // and `wrangler dev`'s missing-secret warnings, and because a first deploy
+  // refuses to start without every one of them.
+  //
+  // **There is no model credential here.** The agent reaches Workers AI through
+  // the `AI` binding above, which Cloudflare authenticates for the Worker —
+  // there is no key to store, rotate or leak, and no AI Gateway token either.
+  // See `CREDENTIAL_COPY` in `src/agents/leader/workflow.ts` for what an
+  // operator is told when the path refuses a request anyway.
+  "secrets": {
+    "required": [
+      "A2A_SIGNING_KEY",
+      "GATEKEEPER_ORIGINS",
+      // `GITHUB_TOKEN` needs contents and pull-request write.
+      //
+      // It is read exclusively inside the workspace object, never crosses an RPC
+      // argument, and never enters the container — `onAuth` checks the host
+      // allowlist at the moment the token is handed over.
+      "GITHUB_TOKEN",
+      // The git identity behind those commits.
+      "GITHUB_NAME",
+      "GITHUB_EMAIL"
+    ]
+  }
+}
