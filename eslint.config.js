@@ -35,6 +35,8 @@ export default tseslint.config(
     }
   },
   {
-    ignores: ["dist/", "node_modules/"]
+    // Each template is a project with its own lint config, and its own `check`
+    // runs it.
+    ignores: ["dist/", "node_modules/", "templates/"]
   }
 );
