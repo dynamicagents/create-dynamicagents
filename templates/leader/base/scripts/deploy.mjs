@@ -13,7 +13,8 @@
  *   carries `config.deployTag` from package.json, and a Worker whose recent
  *   versions carry none of them is somebody else's.
  * - **Wrangler provisions no Vectorize index**, so one this project binds is
- *   created here when it is missing.
+ *   created here when it is missing, and refused when it exists in a shape
+ *   recall cannot write to.
  * - **A first deploy needs every `secrets.required` name in hand.** Wrangler
  *   cannot `secret put` into a Worker that does not exist yet, so `.env` goes up
  *   with the deploy itself — every time, which also makes `.env` the one place a
@@ -123,21 +124,38 @@ if (versions.ok) {
 
 // --- the Vectorize indexes it binds --------------------------------------------
 
+// Coupled to the recall plugin's embedding model — `RECALL` in the Claude Code
+// harness's `src/harness.ts`. An index of any other shape rejects every vector
+// written to it, so one that exists in another shape is refused rather than
+// used: the deploy would succeed and every recall write would fail.
+const SHAPE = { dimensions: 1024, metric: "cosine" };
+
 for (const { index_name: index } of rawConfig.vectorize ?? []) {
-  const found = wrangler(["vectorize", "get", index], { capture: true });
-  if (found.ok) continue;
+  const found = wrangler(["vectorize", "get", index, "--json"], {
+    capture: true
+  });
+  if (found.ok) {
+    const { dimensions, metric } = JSON.parse(found.output).config ?? {};
+    if (dimensions !== SHAPE.dimensions || metric !== SHAPE.metric) {
+      stop(
+        `The Vectorize index "${index}" exists, but as ${dimensions} ` +
+          `dimensions and ${metric}, and recall needs ${SHAPE.dimensions} and ` +
+          `${SHAPE.metric}. Delete it (\`npx wrangler vectorize delete ` +
+          `${index}\`) or point \`index_name\` in wrangler.jsonc elsewhere, then ` +
+          "run `npm run deploy` again."
+      );
+    }
+    continue;
+  }
   if (!found.output.includes("vectorize.index.not_found")) {
     stop(`Couldn't check the Vectorize index "${index}".`, found.output);
   }
-  // Coupled to the recall plugin's embedding model — `RECALL` in the Claude
-  // Code harness's `src/harness.ts`. An index of any other shape rejects every
-  // vector written to it.
   const created = wrangler([
     "vectorize",
     "create",
     index,
-    "--dimensions=1024",
-    "--metric=cosine"
+    `--dimensions=${SHAPE.dimensions}`,
+    `--metric=${SHAPE.metric}`
   ]);
   if (!created.ok) stop(`Couldn't create the Vectorize index "${index}".`);
 }

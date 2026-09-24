@@ -189,8 +189,12 @@ export const parentPlugins = (host: PluginHost<Env>): AgentPlugin[] => {
       token: () => host.env.GITHUB_TOKEN,
       author,
 
-      beforeCheckout: ({ owner, repo: repoName }) =>
-        active.set(`${owner}/${repoName}`),
+      // Forgets the old checkout before git runs, for the reason on
+      // `clearCheckout`: a clone that does not finish records no new one.
+      beforeCheckout: ({ owner, repo: repoName }) => {
+        active.set(`${owner}/${repoName}`);
+        active.clearCheckout();
+      },
       afterCheckout: async ({ dir, repo: repoName, url, branch }) => {
         const ws = workspace();
         // Recorded so a writing subtask can clone the same thing into a container

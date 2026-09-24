@@ -12,13 +12,16 @@
  * match" in a comment is a rule with nothing enforcing it, and every plugin that
  * commits plus every workspace object would otherwise have to keep it.
  *
- * `da-leader` is the fallback for an unset `GITHUB_NAME` — see `.env.example`.
- * The workspace object takes the resolved answer and has no fallback of its own,
- * which is the right split: a default identity is this deployment's choice.
+ * `da-leader` at `leader@dynamicagents.invalid` is the fallback for an unset
+ * `GITHUB_NAME` or `GITHUB_EMAIL` — see `.env.example`. The email needs one as
+ * much as the name: this author is handed to every plugin, so a blank here
+ * overrides their own default rather than deferring to it. The workspace object
+ * takes the resolved answer and has no fallback of its own, which is the right
+ * split: a default identity is this deployment's choice.
  */
 export function gitIdentity(env: Env): { name: string; email: string } {
   return {
     name: env.GITHUB_NAME || "da-leader",
-    email: env.GITHUB_EMAIL
+    email: env.GITHUB_EMAIL || "leader@dynamicagents.invalid"
   };
 }

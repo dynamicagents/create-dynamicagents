@@ -28,6 +28,9 @@ function fakeActive(
     setCheckout: (next) => {
       checkout = next;
     },
+    clearCheckout: () => {
+      checkout = undefined;
+    },
     note: (repo) => noted.push(repo),
     seen: () => [...noted],
     forget: (repo) => forgotten.push(repo)

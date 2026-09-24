@@ -80,6 +80,13 @@ export interface ActiveRepo {
   /** Record it, from `/repo`'s `afterCheckout`, which is told all three. */
   setCheckout(checkout: ActiveCheckout): void;
   /**
+   * Forget it, from `/repo`'s `beforeCheckout`. A clone that is refused or fails
+   * records nothing, so without this the checkout of the *previous* repository
+   * would answer for the one just selected — and a writing subtask would clone
+   * that into a worktree keyed on this one.
+   */
+  clearCheckout(): void;
+  /**
    * Add a name to the sweep's candidate list **without** routing anything to it.
    *
    * {@link set} does both, which is right for a clone: the parent is about to work
@@ -228,6 +235,11 @@ export function activeRepo(host: PluginHost<Env>): ActiveRepo {
         checkout.dir,
         checkout.branch
       );
+    },
+
+    clearCheckout(): void {
+      ensure();
+      storage.sql.exec(`DELETE FROM ${CHECKOUT_TABLE} WHERE id = 1`);
     },
 
     note(repo: string): void {
