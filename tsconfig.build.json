@@ -7,5 +7,8 @@
     "rootDir": "./src"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.spec.ts"]
+  // Specs, and the fixtures only a spec reads: a user installs `dist`, and
+  // nothing in it should be there for the tests. `tsconfig.json` still
+  // typechecks both.
+  "exclude": ["src/**/*.spec.ts", "src/agent/fixtures.ts"]
 }

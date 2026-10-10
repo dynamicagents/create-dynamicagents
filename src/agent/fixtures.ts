@@ -6,8 +6,8 @@
  * and a multi-word tenant id, which is where a derived class or binding name
  * goes wrong.
  *
- * Not a `.spec.ts` file, so `tsconfig.build.json` would emit it — which is why
- * nothing outside a spec imports it, and why it holds data and no logic.
+ * Not a `.spec.ts` file, so `tsconfig.build.json` excludes it by name: a user
+ * installs `dist`, and nothing in it should be there for the tests.
  */
 import { displayName } from "./names.js";
 import type { AgentSpec } from "./spec.js";
