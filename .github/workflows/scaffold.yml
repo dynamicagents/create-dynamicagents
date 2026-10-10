@@ -1,0 +1,98 @@
+name: Scaffold
+
+# What `test.yml` cannot tell you: whether what this CLI writes actually
+# installs, typechecks, passes its own suite and bundles for Cloudflare. Every
+# spec here is about strings; this job is about a project.
+#
+# It is the check that replaces reading a reference deployment. Nothing is
+# deployed — `wrangler deploy --dry-run` compiles and bundles the Worker and
+# needs no Cloudflare credentials — so this job has no secrets of any kind.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  # The `git-main` leg below, on demand.
+  workflow_dispatch:
+  # …and weekly, which is what catches a contract change in core or plugins
+  # before it publishes. Monday morning, UTC.
+  schedule:
+    - cron: "17 6 * * 1"
+
+concurrency:
+  group: scaffold-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  scaffold:
+    name: ${{ matrix.train }}
+    timeout-minutes: 25
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # `registry` is what a user gets: the published core and plugins, at the
+        # ranges `src/train.ts` pins. Every pull request and every push runs it.
+        #
+        # `git-main` installs core and plugins from their default branches
+        # instead, so a contract change is caught here rather than in the first
+        # project somebody generates after it publishes. On a schedule and on
+        # demand only: it says nothing about this commit, and it can fail for
+        # something nobody here did.
+        train: ${{ (github.event_name == 'schedule' || github.event_name ==
+          'workflow_dispatch') && fromJSON('["registry", "git-main"]') ||
+          fromJSON('["registry"]') }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - run: npm ci
+
+      # Against the tarball this commit would publish, installed the way `npm
+      # create` installs it — without devDependencies.
+      - name: Scaffold an agent
+        run: |
+          set -euo pipefail
+          tarball="$PWD/$(npm pack --silent)"
+          cd "$RUNNER_TEMP"
+          npm exec --yes --package="$tarball" -- create-dynamicagents \
+            agent generic support \
+            --name support \
+            --description "Answers product questions from the handbook" \
+            --browser \
+            --yes
+
+      # The train's own default branches, in place of what was installed above.
+      # Both carry a `prepare` that builds, and npm runs it for a git
+      # dependency, which is what makes `dist/` exist in the install.
+      - name: …on the train's main
+        if: matrix.train == 'git-main'
+        working-directory: ${{ runner.temp }}/support
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund \
+            github:dynamicagents/core \
+            github:dynamicagents/plugins
+          npx wrangler types
+
+      # The generated project's own checks, run as its own README tells a dev to
+      # run them. `check` begins with `wrangler types --check`, so a scaffold
+      # that wrote a `wrangler.jsonc` its own types do not match fails here.
+      - name: Its checks
+        working-directory: ${{ runner.temp }}/support
+        run: npm run check
+
+      - name: Its tests
+        working-directory: ${{ runner.temp }}/support
+        run: npm test
+
+      # Deployable: the Worker compiles, bundles, and resolves every binding
+      # its wrangler config declares. No account, no token, nothing deployed.
+      - name: Deployable
+        working-directory: ${{ runner.temp }}/support
+        run: npx wrangler deploy --dry-run --outdir dist

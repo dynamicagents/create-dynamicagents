@@ -15,6 +15,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+// A devDependency, and allowed: this script is never published — `files` ships
+// `dist` — so it may use anything the repository builds with.
+import ts from "typescript";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
@@ -22,12 +25,46 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 const failures = [];
 const fail = (msg) => failures.push(msg);
 
-// Either quote: prettier keeps `src/` double-quoted, but nothing holds `dist/`
-// to that once a build step other than tsc writes to it.
-const importsIn = (source) =>
-  [...source.matchAll(/(?:from|import)\s*\(?\s*(["'])([^"']+)\1/g)].map(
-    (m) => m[2]
+/**
+ * Every module specifier a file actually imports: `import`, `export … from`,
+ * and a dynamic `import()`.
+ *
+ * **Parsed, not matched.** This CLI's own source carries whole generated files
+ * as string data — `src/agent/templates/` is nothing but TypeScript inside
+ * template literals — so a pattern looking for `from "…"` finds the *generated*
+ * project's imports in every one of them, and prose such as "not given" from
+ * "given false" besides. A specifier is a syntactic position, and the compiler
+ * the repository already builds with is what knows one.
+ */
+function importsIn(source, file) {
+  const tree = ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.ESNext,
+    false,
+    ts.ScriptKind.JS
   );
+  const specifiers = [];
+  const visit = (node) => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier !== undefined &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      specifiers.push(node.moduleSpecifier.text);
+    } else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments.length > 0 &&
+      ts.isStringLiteral(node.arguments[0])
+    ) {
+      specifiers.push(node.arguments[0].text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(tree, visit);
+  return specifiers;
+}
 
 function* walk(dir) {
   if (!existsSync(dir)) return;
@@ -69,7 +106,7 @@ for (const file of walk(path.join(root, "dist"))) {
   if (file.endsWith(".map")) fail(`source map shipped to dist: ${rel}`);
   if (!file.endsWith(".js")) continue;
   modules += 1;
-  for (const spec of importsIn(readFileSync(file, "utf8"))) {
+  for (const spec of importsIn(readFileSync(file, "utf8"), file)) {
     if (spec.startsWith(".") || spec.startsWith("node:")) continue;
     if (!installed.has(packageOf(spec))) {
       fail(
