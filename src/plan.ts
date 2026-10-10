@@ -11,6 +11,7 @@ import { blueprintOf } from "./agent/blueprints.js";
 import { validateModelId, validateTenant } from "./agent/names.js";
 import type { AgentSpec } from "./agent/spec.js";
 import {
+  describeOneLine,
   describeTooLong,
   noDescription,
   notEmpty,
@@ -19,6 +20,18 @@ import {
 
 /** The longest one-line description worth putting on an agent card. */
 export const DESCRIPTION_MAX = 200;
+
+/**
+ * Every line terminator JavaScript knows, which is what makes "one line" a rule
+ * rather than a hope.
+ *
+ * A description is written into a TypeScript string literal, a markdown table
+ * cell and the agent card. In the first of those a raw newline does not parse,
+ * which is what `quoted()`'s single-quoted branch would emit for a description
+ * holding a double quote; in the second it ends the table. `--description` is
+ * how one arrives — clack's prompt cannot carry a newline.
+ */
+const LINE_BREAK = /[\n\r\u2028\u2029]/;
 
 /** What the CLI found at the path the project would go. */
 export type TargetState =
@@ -57,6 +70,7 @@ export function plan(spec: AgentSpec, target: Target): Planned {
   const model = validateModelId(spec.modelId);
   if (model !== undefined) return refuse(model);
   if (spec.description.trim() === "") return refuse(noDescription());
+  if (LINE_BREAK.test(spec.description)) return refuse(describeOneLine());
   if (spec.description.length > DESCRIPTION_MAX) {
     return refuse(describeTooLong());
   }

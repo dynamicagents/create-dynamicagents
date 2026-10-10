@@ -9,7 +9,9 @@ import {
   nextSteps,
   noTerminal,
   notEmpty,
+  notInstalled,
   otherModelLabel,
+  outroLine,
   tree,
   unknownBlueprint,
   unknownKind,
@@ -137,5 +139,16 @@ describe("finishByHand", () => {
     expect(text).toContain("cd support");
     expect(text).toContain("npm install");
     expect(text).toContain("npx wrangler types");
+  });
+});
+
+describe("notInstalled", () => {
+  it("names the agent and does not call it ready", () => {
+    // It replaces the success outro, so the one thing it must not do is read
+    // like one: nothing in the project runs until the install is finished.
+    const text = notInstalled("Support");
+    expect(text).toContain("Support");
+    expect(text).not.toMatch(/ready/i);
+    expect(outroLine("Support")).toMatch(/ready/i);
   });
 });

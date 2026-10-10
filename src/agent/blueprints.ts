@@ -3,10 +3,11 @@
  * no process.
  *
  * One entry today. The others — a coding agent, a coordinator — are entries
- * here when they are built, and nothing else about the flow changes: the CLI
- * asks this list, and `../agent/files.ts` switches on the value. Deliberately
- * not listed before they exist, so the menu never offers something that answers
- * with an apology.
+ * here when they are built. An entry is not enough on its own: `./files.ts`
+ * writes the generic project for any spec and does not read `spec.blueprint`,
+ * so a second entry here needs a dispatch there in the same change, or the
+ * menu would offer an agent and write this one. Deliberately not listed before
+ * they exist, so it never offers something that answers with an apology.
  */
 export interface Blueprint {
   /** What a user types: `npm create dynamicagents@latest agent <value>`. */

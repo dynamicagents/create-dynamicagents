@@ -19,8 +19,24 @@ const run = promisify(execFile);
 const NPM_TIMEOUT_MS = 10 * 60_000;
 
 /**
- * One npm invocation. No shell: the arguments go straight to the process, so
- * nothing here has to think about quoting.
+ * Whether an npm invocation has to go through a shell. Pure and exported, so
+ * the one platform rule in this file has a spec rather than only a comment.
+ *
+ * On Windows npm is `npm.cmd`, a batch script — and a batch script is not an
+ * executable: Node refuses to spawn one without a shell, so running `npm`
+ * directly there fails with `EINVAL` on a platform this CLI otherwise supports.
+ * True hands the command to `cmd.exe` instead, which is what `execFile` does
+ * with `shell`. POSIX keeps the direct execution, with no shell in between.
+ */
+export const needsShell = (platform: NodeJS.Platform): boolean =>
+  platform === "win32";
+
+/**
+ * One npm invocation.
+ *
+ * Every argument is a literal this file wrote — nothing a user typed reaches
+ * it — which is what makes {@link needsShell}'s shell harmless: there is no
+ * value here that would need quoting.
  *
  * Output is captured rather than inherited, because a spinner is on the line —
  * and reported on failure, where the last few lines of npm's own diagnosis are
@@ -32,7 +48,8 @@ async function npm(args: string[], cwd: string): Promise<void> {
       cwd,
       timeout: NPM_TIMEOUT_MS,
       maxBuffer: 32 * 1024 * 1024,
-      windowsHide: true
+      windowsHide: true,
+      shell: needsShell(process.platform)
     });
   } catch (err) {
     const { stderr, message } = err as { stderr?: string; message: string };

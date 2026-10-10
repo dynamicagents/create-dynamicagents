@@ -163,6 +163,14 @@ export const noDescription = (): string =>
 export const describeTooLong = (): string =>
   "One line, please — this goes on the agent's card. Say the rest in its soul once it exists.";
 
+/**
+ * A description reaches a TypeScript string literal, a markdown table cell and
+ * the agent card, and a line break is wrong in all three — so it is refused
+ * where it was typed rather than written out and left to fail.
+ */
+export const describeOneLine = (): string =>
+  "One line means one line: no line breaks. It goes on the agent's card and into its source. Say the rest in its soul once it exists.";
+
 /** An install that failed leaves a complete project, so say how to finish it. */
 export const finishByHand = (dir: string, problem: string): string =>
   [
@@ -174,3 +182,13 @@ export const finishByHand = (dir: string, problem: string): string =>
     "  npm install",
     "  npx wrangler types"
   ].join("\n");
+
+/**
+ * The last line after an install that failed, in place of {@link outroLine}.
+ *
+ * Not "ready": every next step needs the dependencies that did not arrive, and
+ * a success outro under a failure is how somebody deploys a project that never
+ * typechecked.
+ */
+export const notInstalled = (name: string): string =>
+  `${name} is written, but its install did not finish. Run the commands above, then README.md has the rest.`;

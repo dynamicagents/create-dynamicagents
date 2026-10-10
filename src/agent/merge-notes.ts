@@ -10,15 +10,22 @@
  *
  * - the agent's own directory holds everything specific to it, the numbers
  *   included, so a merge moves one folder;
- * - every file outside it is tenant-independent and identical in every
- *   generated project, so a merge has nothing to reconcile there;
+ * - outside it, the support files are tenant-independent and byte-identical in
+ *   every generated project — the toolchain config, `src/copy.ts`,
+ *   `src/model.ts`, the test tsconfig — so a merge has nothing to reconcile
+ *   there. What is left is wiring, and short: the Worker entry, the deployment
+ *   card, the wrangler and vitest configs, the dependency list, the secrets,
+ *   the suite and the two guides. Each one of them is a step below, and
+ *   `merge-notes.spec.ts` derives that set rather than trusting this list;
  * - every class, binding and workflow name derives from the tenant id, so two
  *   agents cannot collide and a merge renames nothing.
  *
  * The recipe lives here as data because it is rendered into the generated
  * AGENTS.md — the file the coding agent doing the merge will read — and because
- * a spec can then hold it to naming every wiring point the templates write. A
- * new wiring point fails `merge-notes.spec.ts` until it is mentioned here.
+ * a spec can then hold it to naming every wiring point the templates write.
+ * That spec generates projects that differ and compares them: a file outside
+ * the agent's directory whose contents depend on the tenant id or on an answer
+ * is a wiring point by definition, and it fails until a step here names it.
  */
 
 /** One step of the merge, and what it touches. */
@@ -47,6 +54,10 @@ export const mergeSteps = (dir: string): readonly MergeStep[] => [
     what: "Add its two Durable Object bindings and its `workflows` entry, and create its classes in a **new** migration tag — never one already deployed. `Artifacts` is already there: do not create it twice."
   },
   {
+    path: "wrangler.jsonc",
+    what: "Then copy every capability binding the arriving config declares — `browser` is the one this creator writes — with its settings as they stand. A plugin declares the bindings it needs and core checks them when the agent starts, so `plugins.ts` without its binding is an agent that throws on its first request."
+  },
+  {
     path: "package.json",
     what: "Union the dependencies. Both projects were generated against the same train, so the ranges agree unless one has been bumped."
   },
@@ -61,6 +72,14 @@ export const mergeSteps = (dir: string): readonly MergeStep[] => [
   {
     path: "vitest.config.ts",
     what: "Add the arriving agent's test-only Durable Object and workflow bindings."
+  },
+  {
+    path: "README.md",
+    what: "It was written for one agent: add the arriving tenant to the registration table and to the list of files worth editing, and stop calling the deployment one agent. A reader who believes the old sentence will register one tenant and wonder where the other went."
+  },
+  {
+    path: "AGENTS.md",
+    what: "The same, starting with the heading and the tenant id in its first lines — and keep this recipe in it, because the next merge is read from there."
   }
 ];
 

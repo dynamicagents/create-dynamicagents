@@ -57,12 +57,14 @@ export const RUNTIME = {
 /**
  * What a generated project builds, lints, formats and tests with.
  *
- * `@types/node` tracks the Node a generated project asks for in `engines`, so an
- * API newer than that fails in the project rather than on someone's machine.
+ * `@types/node` is the major {@link NODE_ENGINE} names, never a newer one: the
+ * declarations are what tells a dev that an API exists, so types ahead of the
+ * runtime are a `tsc` that passes and a Worker that throws at the first call.
+ * The two move together, in one commit, or neither moves.
  */
 export const TOOLCHAIN = {
   "@cloudflare/vitest-plugin": "^1.2.0",
-  "@types/node": "^26.5.1",
+  "@types/node": "^24.19.2",
   eslint: "^10.10.0",
   prettier: "^3.9.6",
   typescript: "^6.0.3",

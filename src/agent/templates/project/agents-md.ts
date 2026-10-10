@@ -13,6 +13,13 @@ import { mdTable } from "../text.js";
  * would fail its first check.
  */
 export function agentsMd(spec: AgentSpec, n: AgentNames): string {
+  // Only said where it is true. A `--no-browser` project has no Browser
+  // Rendering binding, and naming a paid service it does not use is how a dev
+  // goes looking for a subscription they do not need.
+  const browserToo = spec.capabilities.includes("browser")
+    ? ", and neither is Browser Rendering"
+    : "";
+
   const where = mdTable(
     ["You are changing…", "It goes in"],
     [
@@ -95,8 +102,8 @@ which steps its task runs.
 [plugins]: https://github.com/dynamicagents/plugins
 
 **A paid Cloudflare Workers plan is a requirement**, not a recommendation: the
-model this agent runs on is not served on the free tier, and neither is Browser
-Rendering. There is no free-tier path in this project.
+model this agent runs on is not served on the free tier${browserToo}. There is
+no free-tier path in this project.
 
 ---
 
@@ -166,9 +173,11 @@ rather than a redesign.
 
 Two generated projects merge mechanically because of how they are laid out:
 everything specific to an agent is in its own directory, including its numbers;
-everything outside that directory is identical in every generated project; and
-every class, binding and workflow name derives from the tenant id, so two agents
-with different tenant ids cannot collide and nothing has to be renamed.
+outside that directory the support files — the toolchain config, \`src/copy.ts\`,
+\`src/model.ts\` — are identical in every generated project, and what is left is
+the short list of wiring points below; and every class, binding and workflow
+name derives from the tenant id, so two agents with different tenant ids cannot
+collide and nothing has to be renamed.
 
 To bring another generated agent in:
 

@@ -87,6 +87,32 @@ describe("validateTenant", () => {
     expect(validateTenant("pipeline")).toBeTypeOf("string");
   });
 
+  it("refuses a name JavaScript would not let the project declare", () => {
+    // `export const class = defineAgent(…)` does not parse, and a class field
+    // may not be called `constructor`: a syntax error in a file nobody wrote.
+    for (const value of [
+      "class",
+      "await",
+      "constructor",
+      "function",
+      "do",
+      "in",
+      "static",
+      "eval"
+    ]) {
+      expect(validateTenant(value), value).toBeTypeOf("string");
+    }
+    expect(validateTenant("class")).toContain("class");
+  });
+
+  it("accepts a multi-word id that starts with a reserved word", () => {
+    // Only a one-word id can collide: `classify` and `class-notes` camelCase
+    // to identifiers of their own.
+    for (const value of ["class-notes", "classify", "do-it", "news"]) {
+      expect(validateTenant(value), value).toBeUndefined();
+    }
+  });
+
   it("says what to type instead", () => {
     expect(validateTenant("My Agent")).toMatch(/lowercase/i);
   });

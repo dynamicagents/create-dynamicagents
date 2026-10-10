@@ -3,6 +3,7 @@ import { projectFiles } from "./files.js";
 import { specs } from "./fixtures.js";
 import { MERGE_CAVEAT, mergeSteps } from "./merge-notes.js";
 import { names } from "./names.js";
+import type { AgentSpec } from "./spec.js";
 
 /**
  * The merge recipe, held to the project it describes.
@@ -10,11 +11,50 @@ import { names } from "./names.js";
  * The creator makes one agent per Worker; bringing a second one in later is a
  * documented procedure rather than a tool, so the risk is that the procedure
  * goes stale — a template grows a wiring point and the recipe does not mention
- * it. The last assertion here is the one that catches that: it reads what the
- * templates actually wire and requires the recipe to name each file.
+ * it. {@link wiring} is what catches that, and it is derived from the templates
+ * themselves rather than from a list kept beside them.
  */
 
 const n = names(specs.full.tenant);
+
+/** Everything outside the agent's own directory, by path. */
+const outside = (spec: AgentSpec): Map<string, string> => {
+  const dir = `${names(spec.tenant).dir}/`;
+  return new Map(
+    projectFiles(spec)
+      .filter((file) => !file.path.startsWith(dir))
+      .map((file) => [file.path, file.contents])
+  );
+};
+
+/**
+ * Every file a merge has to touch, derived: those outside the agent's own
+ * directory whose contents are not the same in two different generated
+ * projects.
+ *
+ * Two comparisons, because a file can vary in two ways. `multiWord` is a
+ * different tenant id, which catches everything derived from it — a class
+ * export, a binding, a name on a card. `bare` is the same id with different
+ * answers, which catches the option-dependent ones, the capability bindings
+ * included. Anything identical across both is a support file that a merge can
+ * leave alone.
+ */
+const wiring = (): string[] => {
+  const base = outside(specs.full);
+  const differs = new Set<string>();
+  for (const other of [outside(specs.multiWord), outside(specs.bare)]) {
+    for (const [path, contents] of base) {
+      if (other.get(path) !== contents) differs.add(path);
+    }
+    for (const path of other.keys()) if (!base.has(path)) differs.add(path);
+  }
+  return [...differs].sort();
+};
+
+const covered = (path: string): boolean =>
+  mergeSteps(n.dir).some(
+    (step) => step.path === path || path.startsWith(step.path)
+  );
 
 describe("mergeSteps", () => {
   it("starts with the directory that holds the agent", () => {
@@ -29,27 +69,28 @@ describe("mergeSteps", () => {
   });
 
   it("names every file outside the agent's directory that is wired to it", () => {
-    // Derived from what the templates write, not from a list kept by hand: a
-    // new wiring point fails here until the recipe mentions it.
-    const mentioned = mergeSteps(n.dir).map((step) => step.path);
-    const wired = projectFiles(specs.full)
-      .map((file) => file.path)
-      .filter(
-        (path) =>
-          !path.startsWith(`${n.dir}/`) &&
-          (path === "src/index.ts" ||
-            path === "src/host-manifest.ts" ||
-            path === "wrangler.jsonc" ||
-            path === "package.json" ||
-            path === ".env.example" ||
-            path === "vitest.config.ts" ||
-            path.startsWith("test/"))
+    // Derived rather than listed: a file outside the agent's directory whose
+    // contents depend on the tenant id or on an answer is wiring by
+    // definition, so a template that grows one fails here until a step names
+    // it. No allowlist to forget to extend.
+    for (const path of wiring()) {
+      expect(covered(path), `${path} is not in the merge recipe`).toBe(true);
+    }
+  });
+
+  it("names nothing a merge would not have to touch", () => {
+    // The other direction: a step for a file that is the same in every
+    // generated project is a step somebody follows for no reason, and a step
+    // for a file no longer written is a recipe that has gone stale.
+    const wired = wiring();
+    for (const step of mergeSteps(n.dir)) {
+      if (step.path === `${n.dir}/`) continue;
+      const real = wired.some(
+        (path) => path === step.path || path.startsWith(step.path)
       );
-    for (const path of wired) {
-      const covered = mentioned.some(
-        (entry) => entry === path || path.startsWith(entry)
+      expect(real, `${step.path} is in the recipe but carries no wiring`).toBe(
+        true
       );
-      expect(covered, `${path} is not in the merge recipe`).toBe(true);
     }
   });
 

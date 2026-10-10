@@ -195,7 +195,7 @@ async function chooseModel(): Promise<string> {
       placeholder: DEFAULT_MODEL_ID,
       validate: (value) => validateModelId(value ?? "")
     })
-  ).trim();
+  );
 }
 
 intro(say.title(version));
@@ -260,11 +260,12 @@ const capabilities = await optional<Capability[]>(
   []
 );
 
-const modelId = await optional(
-  flags.model,
-  () => chooseModel(),
-  DEFAULT_MODEL_ID
-);
+// Trimmed here, like the two answers above: every validator trims before it
+// judges, so an id with spaces around it passes the plan, and writing it
+// untrimmed into `tuning.ts` is a model id Workers AI does not have.
+const modelId = (
+  await optional(flags.model, () => chooseModel(), DEFAULT_MODEL_ID)
+).trim();
 
 const named = flags.dir ?? positionals[2] ?? tenant;
 const dir = path.resolve(process.cwd(), named);
@@ -310,9 +311,14 @@ try {
   await installProject(target.dir, (step) => installing.message(step));
   installing.stop(say.installed);
 } catch (err) {
+  // The project is written and complete; it is the install that failed. So the
+  // run ends here, on the recovery rather than on the next steps: every one of
+  // those needs the dependencies this did not install, and a success outro
+  // under a failure is how somebody deploys a project that never typechecked.
   installing.stop(say.installing);
   log.error(say.finishByHand(target.named, (err as Error).message));
-  process.exitCode = 1;
+  cancel(say.notInstalled(spec.name));
+  process.exit(1);
 }
 
 note(say.nextSteps(target.named, tenant), "Next");

@@ -56,6 +56,20 @@ describe("plan", () => {
     expect(problem).toMatch(/soul/);
   });
 
+  it("refuses a description with a line break in it", () => {
+    // `--description` is how one arrives. Written out, it reaches a string
+    // literal that does not parse and a markdown table that ends early.
+    for (const description of [
+      'Answers questions\nabout "the handbook"',
+      "Answers questions\r\nabout the handbook",
+      "Answers questions\u2028about the handbook"
+    ]) {
+      expect(refusal({ ...specs.full, description }, target)).toMatch(
+        /one line/i
+      );
+    }
+  });
+
   it("refuses a description too long to be one line", () => {
     const description = "a".repeat(DESCRIPTION_MAX + 1);
     expect(refusal({ ...specs.full, description }, target)).toMatch(

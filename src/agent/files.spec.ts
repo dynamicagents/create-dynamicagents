@@ -135,8 +135,10 @@ describe.each(variants())("$label", ({ spec }) => {
   });
 
   it("keeps the shared files free of this agent's name", () => {
-    // What makes a merge of two generated projects have nothing to reconcile:
-    // everything outside the agent's directory is the same in both.
+    // The support files outside the agent's directory are the same in every
+    // generated project, so a merge has nothing to reconcile in them. What
+    // varies out there is wiring, and `./merge-notes.spec.ts` derives that set
+    // and holds the merge recipe to naming all of it.
     for (const path of ["src/copy.ts", "src/model.ts", "tsconfig.json"]) {
       expect(at(files, path), path).not.toContain(spec.tenant);
       expect(at(files, path), path).not.toContain(n.pascal);

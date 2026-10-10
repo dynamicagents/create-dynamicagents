@@ -17,6 +17,70 @@ export const TENANT_MIN = 2;
 export const TENANT_MAX = 32;
 
 /**
+ * Tenant ids the generated code could not declare at all.
+ *
+ * `definition.ts` writes `export const <camelCase> = defineAgent(…)` and
+ * `workflow.ts` writes the same name again as a class field, so a camelCase
+ * form that is a reserved word is a project that does not parse, and
+ * `constructor` is a name a class field is prohibited from having. Either one
+ * is a syntax error in a file the dev never wrote, which is worse than a
+ * refusal at the prompt.
+ *
+ * Only a one-word id can reach this: a reserved word has no capital in it.
+ */
+const LANGUAGE = new Set([
+  "arguments",
+  "await",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "constructor",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "enum",
+  "eval",
+  "export",
+  "extends",
+  "false",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "implements",
+  "import",
+  "in",
+  "instanceof",
+  "interface",
+  "let",
+  "new",
+  "null",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "return",
+  "static",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "true",
+  "try",
+  "typeof",
+  "var",
+  "void",
+  "while",
+  "with",
+  "yield"
+]);
+
+/**
  * Tenant ids whose camelCase form would collide with a member of core's
  * `TaskWorkflow` or `TaskHost`, which the generated pipeline and host declare
  * fields on. The collision is a type error in the generated project, far from
@@ -48,7 +112,11 @@ export function validateTenant(input: string): string | undefined {
   if (!TENANT_RE.test(value)) {
     return "Lowercase letters, digits and single dashes, starting with a letter — like `support` or `release-notes`.";
   }
-  if (RESERVED.has(camelCase(value))) {
+  const camel = camelCase(value);
+  if (LANGUAGE.has(camel)) {
+    return `\`${value}\` is a name JavaScript will not let the generated code declare. Pick another.`;
+  }
+  if (RESERVED.has(camel)) {
     return `\`${value}\` is a name the generated classes already use for something else. Pick another.`;
   }
   return undefined;
