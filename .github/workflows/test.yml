@@ -53,23 +53,59 @@ jobs:
       # the way a user does.
       #
       # Every answer arrives as a flag, because CI has no TTY to ask in — and
-      # the run that gives none has to exit 1 saying so, which is the second
-      # command here. `scaffold.yml` is the job that installs what this writes.
+      # this is the only place that sees what a run with no terminal says, which
+      # every refusal below is about. `scaffold.yml` installs what this writes.
       - name: The packed tarball runs
         run: |
           set -euo pipefail
+          version=$(node -p 'require("./package.json").version')
           tarball="$PWD/$(npm pack --silent)"
           cd "$RUNNER_TEMP"
-          npm exec --yes --package="$tarball" -- create-dynamicagents \
-            agent generic demo \
+
+          create() {
+            npm exec --yes --package="$tarball" -- create-dynamicagents "$@"
+          }
+
+          # A run that must refuse: the sentence it has to say, one it must not,
+          # and the arguments. In a log there is no prompt around a refusal to
+          # make it obvious, so what it says is the whole of what somebody gets.
+          refuses() {
+            local what="$1" says="$2" never="$3"
+            shift 3
+            local out status=0
+            out=$(create "$@" 2>&1) || status=$?
+            if [ "$status" -ne 1 ]; then
+              echo "$what: expected exit 1, got $status"; echo "$out"; exit 1
+            fi
+            if ! grep -qE -- "$says" <<<"$out"; then
+              echo "$what: never said \"$says\":"; echo "$out"; exit 1
+            fi
+            if [ -n "$never" ] && grep -qE -- "$never" <<<"$out"; then
+              echo "$what: said \"$never\":"; echo "$out"; exit 1
+            fi
+          }
+
+          create agent generic demo \
             --name demo --description "A demo agent" --yes --dry-run
 
-          # No answers and no terminal: it must refuse, and name the flags.
-          set +e
-          out=$(npm exec --yes --package="$tarball" -- create-dynamicagents agent 2>&1)
-          status=$?
-          set -e
-          test "$status" -eq 1 || { echo "expected exit 1, got $status"; exit 1; }
-          grep -q -- "--description" <<<"$out" || {
-            echo "the refusal did not name the flags:"; echo "$out"; exit 1;
+          # Both answer whether or not there is a terminal, and `--help` is the
+          # one output that has to read the same in a pipe as in one.
+          test "$(create --version)" = "$version" || {
+            echo "--version did not print $version"; exit 1;
           }
+          create --help | grep -q -- "--dry-run" || {
+            echo "--help did not list the flags"; exit 1;
+          }
+
+          # No answers and no terminal: it must refuse, and name the flags.
+          refuses "no answers" "--description" "" agent
+
+          # A mistyped flag is a mistyped flag, terminal or no terminal. It
+          # used to be told there was none.
+          refuses "a mistyped flag" "is not a flag" "[Nn]o terminal" --hepl
+
+          # A flag whose value will not do is refused where it was given,
+          # naming it — not after every other answer, by the plan.
+          refuses "a tenant id that will not do" "--name .* will not do" "" \
+            agent generic demo --name "My Agent" \
+            --description "A demo agent" --yes

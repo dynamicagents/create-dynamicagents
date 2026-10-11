@@ -50,6 +50,13 @@ The `--` is npm's, not ours: without it, npm keeps the flags for itself.
 | `--browser`     | Install the browser plugin, its binding and its skill.                 |
 | `--yes`         | Do not ask for confirmation.                                           |
 | `--dry-run`     | Print what would be written, and write nothing.                        |
+| `--help`        | Usage, both ways in, and every flag. Also `-h`.                        |
+| `--version`     | The version that would run. Also `-v`.                                 |
+
+An answer given up front is not asked for. One that will not do — a tenant id
+that could not become a class name, a model id that is not one — is said where
+it was given: the question comes back with it where there is a terminal, and the
+run stops before the first question where there is not.
 
 ## License
 

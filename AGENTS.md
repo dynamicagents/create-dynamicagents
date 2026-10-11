@@ -57,6 +57,11 @@ Two rules follow, and breaking either is invisible until somebody's first run:
   `wrangler.jsonc`, the skill on the card. Core checks a plugin's `requires`
   when the agent starts, so two out of three is an agent that throws on its
   first request.
+- **A flag arrives whole** too, on this side of the line — the entry in
+  `src/cli/args.ts`'s `OPTIONS`, the line in `src/cli/messages.ts`'s `FLAGS`,
+  the row in `README.md`. One without the others is a flag that works and
+  nothing documents, or one documented and refused; `messages.spec.ts` holds the
+  three together.
 
 ---
 

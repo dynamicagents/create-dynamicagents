@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { specs } from "../agent/fixtures.js";
-import { DESCRIPTION_MAX, plan, type Target } from "./plan.js";
+import { DESCRIPTION_MAX } from "./answers.js";
+import { plan, type Target } from "./plan.js";
 
 /**
  * What a run decides before it writes anything.

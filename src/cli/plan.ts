@@ -5,33 +5,22 @@
  * target, and answers with either the whole file set or one sentence saying why
  * not. The CLI reads the filesystem and does the writing; everything judged
  * here, a spec can reach with no process at all.
+ *
+ * It is the backstop rather than the first word on an answer: every rule it
+ * applies is `./answers.ts`'s, and the flags and the prompts apply the same
+ * judges as each answer arrives — so a refusal here is a spec on what reaches
+ * `projectFiles`, not the sentence somebody is meant to read.
  */
 import { projectFiles, type GeneratedFile } from "../agent/files.js";
-import { blueprintOf } from "../agent/offer/blueprints.js";
-import { validateModelId, validateTenant } from "../agent/names.js";
 import type { AgentSpec } from "../agent/spec.js";
 import {
-  describeOneLine,
-  describeTooLong,
-  noDescription,
-  notEmpty,
-  unknownBlueprint
-} from "./messages.js";
-
-/** The longest one-line description worth putting on an agent card. */
-export const DESCRIPTION_MAX = 200;
-
-/**
- * Every line terminator JavaScript knows, which is what makes "one line" a rule
- * rather than a hope.
- *
- * A description is written into a TypeScript string literal, a markdown table
- * cell and the agent card. In the first of those a raw newline does not parse,
- * which is what `quoted()`'s single-quoted branch would emit for a description
- * holding a double quote; in the second it ends the table. `--description` is
- * how one arrives — clack's prompt cannot carry a newline.
- */
-const LINE_BREAK = /[\n\r\u2028\u2029]/;
+  asBlueprint,
+  asDescription,
+  asModelId,
+  asTenant,
+  type Judged
+} from "./answers.js";
+import { notEmpty } from "./messages.js";
 
 /** What the CLI found at the path the project would go. */
 export type TargetState =
@@ -58,23 +47,33 @@ export interface Plan {
 
 export type Planned = { ok: true; plan: Plan } | { ok: false; problem: string };
 
+/**
+ * Why the target will not do, or `undefined` when it will.
+ *
+ * Its own function so the CLI can run it the moment a directory is named: a
+ * `--dir` that already has something in it is worth saying before the questions
+ * rather than after every one of them.
+ */
+export const whyNotTarget = (target: Target): string | undefined =>
+  target.state === "occupied" ? notEmpty(target.named) : undefined;
+
 /** The plan for these answers, or the one sentence that stops it. */
 export function plan(spec: AgentSpec, target: Target): Planned {
   const refuse = (problem: string): Planned => ({ ok: false, problem });
 
-  if (blueprintOf(spec.blueprint) === undefined) {
-    return refuse(unknownBlueprint(spec.blueprint));
+  // In the order a reader meets the questions, and each one the judge the flag
+  // and the prompt already used.
+  const answers: readonly Judged<unknown>[] = [
+    asBlueprint(spec.blueprint),
+    asTenant(spec.tenant),
+    asModelId(spec.modelId),
+    asDescription(spec.description)
+  ];
+  for (const answer of answers) {
+    if ("problem" in answer) return refuse(answer.problem);
   }
-  const tenant = validateTenant(spec.tenant);
-  if (tenant !== undefined) return refuse(tenant);
-  const model = validateModelId(spec.modelId);
-  if (model !== undefined) return refuse(model);
-  if (spec.description.trim() === "") return refuse(noDescription());
-  if (LINE_BREAK.test(spec.description)) return refuse(describeOneLine());
-  if (spec.description.length > DESCRIPTION_MAX) {
-    return refuse(describeTooLong());
-  }
-  if (target.state === "occupied") return refuse(notEmpty(target.named));
+  const problem = whyNotTarget(target);
+  if (problem !== undefined) return refuse(problem);
 
   return { ok: true, plan: { spec, target, files: projectFiles(spec) } };
 }
