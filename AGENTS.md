@@ -72,8 +72,10 @@ cd /tmp/demo && npm run check && npm test
 npx wrangler deploy --dry-run --outdir dist
 ```
 
-`.github/workflows/scaffold.yml` runs exactly that on every pull request, and
-again weekly against core and plugins at their default branches.
+`.github/workflows/scaffold.yml` runs exactly that on every pull request, with
+core and plugins installed from their default branches. The train releases in
+order — core, then plugins, then this package — so those tips are the contracts
+the templates are written against, and what a user installs once this publishes.
 
 ---
 
