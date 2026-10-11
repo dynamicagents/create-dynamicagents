@@ -1,6 +1,11 @@
 /**
  * Taking a generated agent into another Worker, as data.
  *
+ * In `templates/` beside `text.ts` rather than in `agent/`: this folder is what
+ * a template reads, and `templates/agent|project|test/` is what a template
+ * writes. `project/agents-md.ts` is the one caller, which is where this is
+ * rendered for the person — or the coding agent — doing the merge.
+ *
  * The creator makes one agent per Worker, and that is the isolation it is for:
  * one wrangler config, one bundle, one deployment, nothing shared with anybody
  * else's agent. A dev who later wants several in one Worker should find that

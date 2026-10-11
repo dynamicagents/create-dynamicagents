@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { projectFiles } from "./files.js";
-import { specs } from "./fixtures.js";
+import { projectFiles } from "../files.js";
+import { specs } from "../fixtures.js";
 import { MERGE_CAVEAT, mergeSteps } from "./merge-notes.js";
-import { names } from "./names.js";
-import type { AgentSpec } from "./spec.js";
+import { names } from "../names.js";
+import type { AgentSpec } from "../spec.js";
 
 /**
  * The merge recipe, held to the project it describes.

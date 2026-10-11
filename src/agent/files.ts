@@ -2,8 +2,15 @@
  * Every file a generated project consists of, as data.
  *
  * Pure: a spec builds an `AgentSpec` and reads exactly what would be written,
- * with no filesystem and no process. `../cli/write.ts` is the only thing that turns
- * this into bytes on disk.
+ * with no filesystem and no process. `../cli/write.ts` is the only thing that
+ * turns this into bytes on disk.
+ *
+ * The generator's three parts, from here: `./spec.ts` and `./names.ts` are the
+ * vocabulary every layer reads; `./offer/` is the two menus the CLI puts in
+ * front of somebody, which nothing below reads; and `./templates/` is what a
+ * template reads, with `templates/agent|project|test/` the one pure function
+ * per generated file. Every spec in this directory is a spec on what
+ * `projectFiles` returns, which is why they sit beside it.
  */
 import { names } from "./names.js";
 import type { AgentSpec } from "./spec.js";
@@ -55,7 +62,7 @@ export interface GeneratedFile {
  *
  * The agent's own directory is nested under `src/agents/<tenant>/` even though
  * there is one agent: a flatter layout would read better today and would turn a
- * later merge into another Worker into a rename of every file. `./merge-notes.ts`
+ * later merge into another Worker into a rename of every file. `./templates/merge-notes.ts`
  * carries the rest of that reasoning.
  */
 export function projectFiles(spec: AgentSpec): GeneratedFile[] {

@@ -2,13 +2,17 @@
  * What a generated `package.json` asks for: the pins in `src/train.ts`, narrowed
  * to what this particular agent imports.
  *
+ * In `templates/` beside `text.ts` rather than in `agent/`: this folder is what
+ * a template reads, and `templates/agent|project|test/` is what a template
+ * writes. `project/package-json.ts` is the one caller.
+ *
  * Pure, and a function of the spec rather than a constant, because an
  * uninstalled capability should not leave a dependency behind: a project with
  * no plugins does not depend on `@dynamicagents/plugins`, and one with no
  * sub-agent does not depend on `zod`.
  */
-import { RUNTIME, TOOLCHAIN, TRAIN } from "../train.js";
-import type { AgentSpec } from "./spec.js";
+import { RUNTIME, TOOLCHAIN, TRAIN } from "../../train.js";
+import type { AgentSpec } from "../spec.js";
 
 /** npm keeps a manifest's dependency maps sorted, so these are too. */
 const sorted = (map: Record<string, string>): Record<string, string> =>

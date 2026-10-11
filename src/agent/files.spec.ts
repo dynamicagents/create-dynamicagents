@@ -71,7 +71,7 @@ describe.each(variants())("$label", ({ spec }) => {
 
   it("nests the agent under src/agents/<tenant>/", () => {
     // Kept even with one agent: a flatter layout would turn a later merge into
-    // another Worker into a rename of every file. See ./merge-notes.ts.
+    // another Worker into a rename of every file. See ./templates/merge-notes.ts.
     expect(n.dir).toBe(`src/agents/${spec.tenant}`);
     expect(paths.some((path) => path.startsWith(`${n.dir}/`))).toBe(true);
   });
@@ -137,7 +137,7 @@ describe.each(variants())("$label", ({ spec }) => {
   it("keeps the shared files free of this agent's name", () => {
     // The support files outside the agent's directory are the same in every
     // generated project, so a merge has nothing to reconcile in them. What
-    // varies out there is wiring, and `./merge-notes.spec.ts` derives that set
+    // varies out there is wiring, and `./templates/merge-notes.spec.ts` derives that set
     // and holds the merge recipe to naming all of it.
     for (const path of ["src/copy.ts", "src/model.ts", "tsconfig.json"]) {
       expect(at(files, path), path).not.toContain(spec.tenant);

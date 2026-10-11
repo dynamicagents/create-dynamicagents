@@ -18,7 +18,7 @@ export interface AgentSpec {
   name: string;
   /** One line: what it does. Goes on the card and seeds the soul. */
   description: string;
-  /** Which agent this was created from — see `./blueprints.ts`. */
+  /** Which agent this was created from — see `./offer/blueprints.ts`. */
   blueprint: string;
   /** Whether it delegates to the `general` sub-agent. */
   subAgent: boolean;

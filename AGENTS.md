@@ -30,6 +30,13 @@ sets the rules:
 a scaffold from at run time — `starter` is archived, and was never published —
 so this package carries the code it writes, prompt copy included.
 
+Its root is what something outside reaches for: `spec.ts` and `names.ts` are the
+vocabulary every layer reads, `files.ts` is the project as data, and every spec
+there is a spec on what `projectFiles` returns, which is why they sit beside it.
+Below it, `offer/` is the two menus the CLI puts in front of somebody — nothing
+a template writes reads them — and `templates/` is what a template _reads_,
+with `templates/agent|project|test/` the files a template _writes_.
+
 That makes the templates **a use of core's published class contract**. They name
 `StepAgent`, `TaskHost`, `TaskWorkflow`, `SubAgent` and `defineAgent`, and the
 config files they write are read by wrangler, eslint, tsc and vitest. So neither

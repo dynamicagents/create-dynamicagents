@@ -1,4 +1,4 @@
-import { MERGE_CAVEAT, mergeSteps } from "../../merge-notes.js";
+import { MERGE_CAVEAT, mergeSteps } from "../merge-notes.js";
 import type { AgentNames, AgentSpec } from "../../spec.js";
 import { mdTable } from "../text.js";
 

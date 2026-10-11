@@ -16,8 +16,12 @@ import {
   spinner,
   text
 } from "@clack/prompts";
-import { BLUEPRINTS, blueprintOf, type Blueprint } from "./agent/blueprints.js";
-import { CAPABILITIES } from "./agent/capabilities.js";
+import {
+  BLUEPRINTS,
+  blueprintOf,
+  type Blueprint
+} from "./agent/offer/blueprints.js";
+import { CAPABILITIES } from "./agent/offer/capabilities.js";
 import { displayName, validateModelId, validateTenant } from "./agent/names.js";
 import type { AgentSpec, Capability } from "./agent/spec.js";
 import { installProject } from "./cli/install.js";

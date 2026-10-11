@@ -1,9 +1,10 @@
 /**
- * Which agent `npm create dynamicagents agent` writes. Pure, so the spec needs
- * no process.
+ * Which agent `npm create dynamicagents agent` writes — one of the two menus
+ * `./` holds, read by `src/cli.ts` and by nothing a template writes. Pure, so
+ * the spec needs no process.
  *
  * One entry today. The others — a coding agent, a coordinator — are entries
- * here when they are built. An entry is not enough on its own: `./files.ts`
+ * here when they are built. An entry is not enough on its own: `../files.ts`
  * writes the generic project for any spec and does not read `spec.blueprint`,
  * so a second entry here needs a dispatch there in the same change, or the
  * menu would offer an agent and write this one. Deliberately not listed before

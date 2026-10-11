@@ -7,7 +7,7 @@
  * tenant, so every project this CLI generates has the same two files — which is
  * what makes a later merge of two generated projects have nothing to reconcile
  * here. Anything agent-specific goes in the agent's own directory instead; see
- * `../../merge-notes.ts`.
+ * `../merge-notes.ts`.
  *
  * Escaping, since both hold TypeScript that itself holds template literals: a
  * backtick for the generated file is `\``, and a `${` it should keep is `\${`.
