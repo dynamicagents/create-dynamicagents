@@ -50,11 +50,26 @@ jobs:
       # What `npm create dynamicagents` does, against the tarball this commit
       # would publish: install it without devDependencies, outside the repo, and
       # run its bin. The only check that sees `files`, `bin` and `dependencies`
-      # the way a user does. It names a kind because CI has no TTY to ask in,
-      # and without one the bin exits 1.
+      # the way a user does.
+      #
+      # Every answer arrives as a flag, because CI has no TTY to ask in — and
+      # the run that gives none has to exit 1 saying so, which is the second
+      # command here. `scaffold.yml` is the job that installs what this writes.
       - name: The packed tarball runs
         run: |
           set -euo pipefail
           tarball="$PWD/$(npm pack --silent)"
           cd "$RUNNER_TEMP"
-          npm exec --yes --package="$tarball" -- create-dynamicagents agent
+          npm exec --yes --package="$tarball" -- create-dynamicagents \
+            agent generic demo \
+            --name demo --description "A demo agent" --yes --dry-run
+
+          # No answers and no terminal: it must refuse, and name the flags.
+          set +e
+          out=$(npm exec --yes --package="$tarball" -- create-dynamicagents agent 2>&1)
+          status=$?
+          set -e
+          test "$status" -eq 1 || { echo "expected exit 1, got $status"; exit 1; }
+          grep -q -- "--description" <<<"$out" || {
+            echo "the refusal did not name the flags:"; echo "$out"; exit 1;
+          }

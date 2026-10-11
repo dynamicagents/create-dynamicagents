@@ -17,6 +17,13 @@ describe("KINDS", () => {
       expect(kind.about).not.toBe("");
     }
   });
+
+  it("can build an agent, and says so about nothing else yet", () => {
+    // What `ready` decides: a kind that is not prints its note and exits.
+    expect(
+      KINDS.filter((kind) => kind.ready).map((kind) => kind.value)
+    ).toEqual(["agent"]);
+  });
 });
 
 describe("kindOf", () => {
