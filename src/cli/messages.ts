@@ -2,7 +2,7 @@
 import { BLUEPRINTS } from "../agent/blueprints.js";
 import type { GeneratedFile } from "../agent/files.js";
 import { KINDS, type Kind } from "./kinds.js";
-import { DEFAULT_MODEL_ID, MODELS_URL } from "./train.js";
+import { DEFAULT_MODEL_ID, MODELS_URL } from "../train.js";
 
 export const WEBSITE = "https://dynamicagents.dev";
 

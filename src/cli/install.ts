@@ -1,7 +1,7 @@
 /**
  * Installing a written project, and nothing else.
  *
- * Thin on purpose: what to install is `src/cli/train.ts`'s and the manifest the
+ * Thin on purpose: what to install is `src/train.ts`'s and the manifest the
  * templates wrote, and **npm is what validates it** — it owns semver, so a pin
  * that no longer satisfies the train's own declarations is an `ERESOLVE` here
  * rather than a guess this CLI made about ranges.

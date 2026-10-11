@@ -8,9 +8,9 @@
  * `tsconfig.json` carries no comments on purpose: prettier's own parser for it
  * is the JSON one, and the explanations that would go in it are in the
  * generated AGENTS.md instead. The toolchain these are written against is
- * pinned in `src/cli/train.ts`.
+ * pinned in `src/train.ts`.
  */
-import { NODE_VERSION } from "../../../cli/train.js";
+import { NODE_VERSION } from "../../../train.js";
 import { jsonFile } from "../text.js";
 
 /**

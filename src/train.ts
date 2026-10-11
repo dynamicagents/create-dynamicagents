@@ -2,6 +2,10 @@
  * The versions a generated project starts on. Pure data, so a spec reads it
  * without a process.
  *
+ * At the root beside `cli.ts` rather than inside either half, because both read
+ * it: `./cli/` to answer a question and to install, `./agent/templates/` to
+ * write the ranges into a project. It belongs to neither.
+ *
  * **Everything a generated project runs on is pinned here**, and the reason is
  * not caution. The code this CLI writes *uses* core's classes — `StepAgent`,
  * `TaskHost`, `TaskWorkflow`, `SubAgent`, `defineAgent` — and the config files

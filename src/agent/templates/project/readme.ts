@@ -1,4 +1,4 @@
-import { MODELS_URL } from "../../../cli/train.js";
+import { MODELS_URL } from "../../../train.js";
 import type { AgentNames, AgentSpec } from "../../spec.js";
 import { mdTable } from "../text.js";
 

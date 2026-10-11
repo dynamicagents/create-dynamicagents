@@ -24,7 +24,7 @@ import { installProject } from "./cli/install.js";
 import { KINDS, kindOf, type Kind } from "./cli/kinds.js";
 import * as say from "./cli/messages.js";
 import { plan, type Target, type TargetState } from "./cli/plan.js";
-import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./cli/train.js";
+import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train.js";
 import { writeProject } from "./cli/write.js";
 
 /**
@@ -35,7 +35,8 @@ import { writeProject } from "./cli/write.js";
  *
  * `./cli/` is this half: one run of the command, from the questions to the
  * install. `./agent/` is the other, and the only thing it is about is the
- * project this writes.
+ * project this writes. `./train.ts` sits out here with this file because both
+ * halves read it.
  */
 
 // Read at runtime rather than imported: `package.json` sits outside `rootDir`.

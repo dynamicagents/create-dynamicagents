@@ -19,7 +19,7 @@ import {
   WEBSITE,
   workInProgress
 } from "./messages.js";
-import { MODELS_URL } from "./train.js";
+import { MODELS_URL } from "../train.js";
 
 describe("title", () => {
   it("names the version that ran", () => {

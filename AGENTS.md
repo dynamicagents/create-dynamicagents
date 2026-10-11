@@ -18,7 +18,8 @@ sets the rules:
   and prints; what it asks and prints comes from pure functions and data a
   spec can reach without a process. `src/cli/` is where those live — one run of
   the command, from the questions to the install — in opposition to `src/agent/`,
-  which is only ever about the project being written.
+  which is only ever about the project being written. `src/train.ts` is at the
+  root with the bin because both halves read it.
 
 ---
 
@@ -32,7 +33,7 @@ so this package carries the code it writes, prompt copy included.
 That makes the templates **a use of core's published class contract**. They name
 `StepAgent`, `TaskHost`, `TaskWorkflow`, `SubAgent` and `defineAgent`, and the
 config files they write are read by wrangler, eslint, tsc and vitest. So neither
-set can ask for "latest": `src/cli/train.ts` pins both, and a minor of core means a
+set can ask for "latest": `src/train.ts` pins both, and a minor of core means a
 diff there and a release here. Nothing validates those pins locally — `npm
 install` in a generated project owns semver, and `.github/workflows/scaffold.yml`
 is what runs it.
