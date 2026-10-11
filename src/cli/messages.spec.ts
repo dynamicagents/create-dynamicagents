@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { BLUEPRINTS } from "./agent/blueprints.js";
-import { projectFiles } from "./agent/files.js";
-import { specs } from "./agent/fixtures.js";
+import { BLUEPRINTS } from "../agent/blueprints.js";
+import { projectFiles } from "../agent/files.js";
+import { specs } from "../agent/fixtures.js";
 import { KINDS, kindOf } from "./kinds.js";
 import {
   finishByHand,

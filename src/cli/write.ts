@@ -9,7 +9,7 @@
  */
 import { mkdir, mkdtemp, rename, rm, rmdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { GeneratedFile } from "./agent/files.js";
+import type { GeneratedFile } from "../agent/files.js";
 
 /** Write `files` so that `target` either ends up complete or is never created. */
 export async function writeProject(

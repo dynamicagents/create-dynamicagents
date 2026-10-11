@@ -1,5 +1,5 @@
 import type { AgentSpec } from "../../spec.js";
-import { MODELS_URL } from "../../../train.js";
+import { MODELS_URL } from "../../../cli/train.js";
 import { quoted } from "../text.js";
 
 /**

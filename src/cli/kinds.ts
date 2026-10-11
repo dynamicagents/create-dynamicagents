@@ -9,7 +9,7 @@ export interface Kind {
   about: string;
   /**
    * Whether this CLI can build one yet. A kind that cannot says so and exits;
-   * `src/messages.ts` has the words.
+   * `src/cli/messages.ts` has the words.
    */
   ready: boolean;
 }

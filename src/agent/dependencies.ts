@@ -1,5 +1,5 @@
 /**
- * What a generated `package.json` asks for: the pins in `src/train.ts`, narrowed
+ * What a generated `package.json` asks for: the pins in `src/cli/train.ts`, narrowed
  * to what this particular agent imports.
  *
  * Pure, and a function of the spec rather than a constant, because an
@@ -7,7 +7,7 @@
  * no plugins does not depend on `@dynamicagents/plugins`, and one with no
  * sub-agent does not depend on `zod`.
  */
-import { RUNTIME, TOOLCHAIN, TRAIN } from "../train.js";
+import { RUNTIME, TOOLCHAIN, TRAIN } from "../cli/train.js";
 import type { AgentSpec } from "./spec.js";
 
 /** npm keeps a manifest's dependency maps sorted, so these are too. */

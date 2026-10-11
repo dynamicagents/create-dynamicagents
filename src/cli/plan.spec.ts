@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { specs } from "./agent/fixtures.js";
+import { specs } from "../agent/fixtures.js";
 import { DESCRIPTION_MAX, plan, type Target } from "./plan.js";
 
 /**

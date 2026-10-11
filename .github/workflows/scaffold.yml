@@ -44,7 +44,7 @@ jobs:
 
       # Against the tarball this commit would publish, installed the way `npm
       # create` installs it — without devDependencies. The install the CLI runs
-      # for the new project resolves `src/train.ts`'s pins from the registry;
+      # for the new project resolves `src/cli/train.ts`'s pins from the registry;
       # the step below replaces the two that this repository moves with it.
       - name: Scaffold an agent
         run: |

@@ -2,7 +2,7 @@
  * Every file a generated project consists of, as data.
  *
  * Pure: a spec builds an `AgentSpec` and reads exactly what would be written,
- * with no filesystem and no process. `../write.ts` is the only thing that turns
+ * with no filesystem and no process. `../cli/write.ts` is the only thing that turns
  * this into bytes on disk.
  */
 import { names } from "./names.js";

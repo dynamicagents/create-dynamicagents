@@ -1,6 +1,6 @@
 /** What `npm create dynamicagents` prints. Pure, so the spec needs no process. */
-import { BLUEPRINTS } from "./agent/blueprints.js";
-import type { GeneratedFile } from "./agent/files.js";
+import { BLUEPRINTS } from "../agent/blueprints.js";
+import type { GeneratedFile } from "../agent/files.js";
 import { KINDS, type Kind } from "./kinds.js";
 import { DEFAULT_MODEL_ID, MODELS_URL } from "./train.js";
 

@@ -20,18 +20,22 @@ import { BLUEPRINTS, blueprintOf, type Blueprint } from "./agent/blueprints.js";
 import { CAPABILITIES } from "./agent/capabilities.js";
 import { displayName, validateModelId, validateTenant } from "./agent/names.js";
 import type { AgentSpec, Capability } from "./agent/spec.js";
-import { installProject } from "./install.js";
-import { KINDS, kindOf, type Kind } from "./kinds.js";
-import * as say from "./messages.js";
-import { plan, type Target, type TargetState } from "./plan.js";
-import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train.js";
-import { writeProject } from "./write.js";
+import { installProject } from "./cli/install.js";
+import { KINDS, kindOf, type Kind } from "./cli/kinds.js";
+import * as say from "./cli/messages.js";
+import { plan, type Target, type TargetState } from "./cli/plan.js";
+import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./cli/train.js";
+import { writeProject } from "./cli/write.js";
 
 /**
  * The bin: it reads its arguments, asks, writes, installs and prints. Every
- * string it says is in `./messages.ts`, every rule it applies is in a pure
- * module beside it, and what it would write is `./plan.ts`'s — so all of that
- * has a spec and none of it needs a process.
+ * string it says is in `./cli/messages.ts`, every rule it applies is in a pure
+ * module in `./cli/` beside it, and what it would write is `./cli/plan.ts`'s —
+ * so all of that has a spec and none of it needs a process.
+ *
+ * `./cli/` is this half: one run of the command, from the questions to the
+ * install. `./agent/` is the other, and the only thing it is about is the
+ * project this writes.
  */
 
 // Read at runtime rather than imported: `package.json` sits outside `rootDir`.

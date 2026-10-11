@@ -1,4 +1,4 @@
-import { NODE_ENGINE } from "../../../train.js";
+import { NODE_ENGINE } from "../../../cli/train.js";
 import { dependenciesFor, devDependenciesFor } from "../../dependencies.js";
 import type { AgentSpec } from "../../spec.js";
 import { jsonFile } from "../text.js";
@@ -8,7 +8,7 @@ import { jsonFile } from "../text.js";
  *
  * Written by this CLI rather than left to `npm install` to fill in, so the
  * manifest is ours: formatted like everything else it generates, and covered by
- * the formatting spec. The ranges are `src/train.ts`'s, narrowed by
+ * the formatting spec. The ranges are `src/cli/train.ts`'s, narrowed by
  * `../../dependencies.ts` to what this agent actually imports.
  *
  * `check` is ordered the way it is because each step depends on the last:
