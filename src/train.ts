@@ -10,9 +10,6 @@
  * written against. When the train moves, this file moves, and this package
  * follows with a release of its own.
  *
- * It is also not enough to copy what core *allows*, which was the obvious
- * design and does not work: see {@link RUNTIME}'s note on `@cloudflare/think`.
- *
  * Nothing here is validated by this CLI. `npm install` in the generated project
  * is the check — it owns semver, and a conflict between these pins and the
  * train's own declarations is an `ERESOLVE` before any code runs, which
@@ -24,8 +21,8 @@
 
 /** The train itself: what the generated code is written against. */
 export const TRAIN = {
-  core: ">=0.13.1 <0.14.0",
-  plugins: ">=0.13.0 <0.14.0"
+  core: ">=0.14.0 <0.15.0",
+  plugins: ">=0.14.0 <0.15.0"
 } as const;
 
 /**
@@ -33,19 +30,13 @@ export const TRAIN = {
  * imports directly. **Never bundled**: two copies of `agents` in one Worker
  * break the `Session` / `SessionMessage` types and every `instanceof`.
  *
- * Each range is core's own declaration for that package, with one exception
- * that is measured rather than chosen:
- *
- * **`@cloudflare/think` stops below 0.20.2.** Core asks for `>=0.20.0 <0.21.0`
- * and for `agents >=0.26.0 <0.27.0`, and those two are not jointly satisfiable
- * at their newest points: think 0.20.2 raised its own `agents` peer to
- * `>=0.28.0`, so installing the newest think core allows produces an
- * `ERESOLVE` against the `agents` core allows. The upper bound here is the
- * version where that happened, and it moves when core's `agents` range does.
+ * Each peer range is core's own declaration for that package, copied: a range
+ * of our own that core does not allow is an `ERESOLVE` in the generated
+ * project, and one narrower than core's denies a user a version that works.
  */
 export const RUNTIME = {
-  "@cloudflare/think": ">=0.20.0 <0.20.2",
-  agents: ">=0.26.0 <0.27.0",
+  "@cloudflare/think": ">=0.20.2 <0.21.0",
+  agents: ">=0.28.0 <0.29.0",
   ai: "^7.0.88",
   "workers-ai-provider": "^4.0.0",
   /** The A2A protocol's own package: its constants and types. */
