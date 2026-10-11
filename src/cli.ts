@@ -167,13 +167,21 @@ async function chooseBlueprint(arg: string | undefined): Promise<Blueprint> {
   );
 }
 
-/** What is at `dir` already — the one filesystem read the plan needs. */
+/**
+ * What is at `dir` already — the one filesystem read the plan needs.
+ *
+ * Only `ENOENT` means the path is free. Anything else is a path this run cannot
+ * judge — no permission to look, a file where a directory would have to be —
+ * and calling that "free" would turn it into a failure halfway through writing
+ * instead of a sentence before anything is written.
+ */
 async function targetState(dir: string): Promise<TargetState> {
   try {
     const info = await stat(dir);
     if (!info.isDirectory()) return "occupied";
     return (await readdir(dir)).length === 0 ? "empty" : "occupied";
-  } catch {
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     return "free";
   }
 }
@@ -269,7 +277,14 @@ const modelId = (
 
 const named = flags.dir ?? positionals[2] ?? tenant;
 const dir = path.resolve(process.cwd(), named);
-const target: Target = { named, dir, state: await targetState(dir) };
+
+let state: TargetState;
+try {
+  state = await targetState(dir);
+} catch (err) {
+  stop(say.cannotRead(named, (err as Error).message));
+}
+const target: Target = { named, dir, state };
 
 const spec: AgentSpec = {
   tenant,

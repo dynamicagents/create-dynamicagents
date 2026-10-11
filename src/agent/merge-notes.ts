@@ -67,7 +67,11 @@ export const mergeSteps = (dir: string): readonly MergeStep[] => [
   },
   {
     path: "test/",
-    what: "Copy its specs and its `test/worker.ts` classes, and add their test-only bindings to `vitest.config.ts`."
+    what: "Rename the arriving specs as they come across. Every generated project calls them `turn.spec.ts`, `edge.spec.ts`, `soul.spec.ts` and so on, so copying them in overwrites the suite that is already here — `turn.<tenant>.spec.ts`, or a directory per tenant, either reads fine."
+  },
+  {
+    path: "test/worker.ts",
+    what: "Merge rather than copy: the suite runs one test Worker. Add the arriving agent's `Test*` classes, its three bindings to `TestEnv`, its `manifest` import under an alias — both projects import that name — and a second `defineAgent({ tenant, manifest, agent })` to the `agents` array. Without that last one its turn specs call a tenant the test Worker does not serve."
   },
   {
     path: "vitest.config.ts",

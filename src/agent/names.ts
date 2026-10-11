@@ -99,6 +99,37 @@ const RESERVED = new Set([
   "soul"
 ]);
 
+/**
+ * Tenant ids whose derived names would land on an identifier a generated
+ * module already has in scope, and the name each one would collide with.
+ *
+ * `a2a` is the one that reads like a joke and is not: `src/index.ts` imports
+ * the agent's definition as `a2a` and then writes `const a2a =
+ * createA2AWorker(…)`. `task` generates `class TaskHost extends TaskHost`.
+ * Neither project parses, and neither is caught by the two sets above — these
+ * are not words the language or core's classes reserve, they are names the
+ * templates happen to import.
+ *
+ * So this is derived data rather than judgement. `names.spec.ts` parses every
+ * module of a generated project with the TypeScript compiler, instantiates
+ * each derived name against what that module already has in scope, and fails
+ * if this map has fallen behind in either direction. A template that imports
+ * something new is caught there rather than by the dev who typed the id.
+ */
+export const COLLIDES = new Map([
+  ["a2a", "a2a"],
+  ["agent-model", "agentModel"],
+  ["create-a2-a-worker", "createA2AWorker"],
+  ["define-agent", "defineAgent"],
+  ["handle-artifact-route", "handleArtifactRoute"],
+  ["host-manifest", "hostManifest"],
+  ["manifest", "manifest"],
+  ["plugins", "plugins"],
+  ["step", "StepAgent"],
+  ["task", "TaskHost"],
+  ["turn-task", "turnTask"]
+]);
+
 /** A Workers AI model id, as the catalogue spells one. */
 export const MODEL_ID_RE = /^@cf\/[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/;
 
@@ -115,6 +146,10 @@ export function validateTenant(input: string): string | undefined {
   const camel = camelCase(value);
   if (LANGUAGE.has(camel)) {
     return `\`${value}\` is a name JavaScript will not let the generated code declare. Pick another.`;
+  }
+  const collision = COLLIDES.get(value);
+  if (collision !== undefined) {
+    return `\`${value}\` would generate \`${collision}\`, which a generated module already has by that name. Pick another.`;
   }
   if (RESERVED.has(camel)) {
     return `\`${value}\` is a name the generated classes already use for something else. Pick another.`;

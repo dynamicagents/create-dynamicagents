@@ -157,6 +157,20 @@ export const dryRun = "Nothing was written: this was a dry run.";
 export const notEmpty = (named: string): string =>
   `\`${named}\` already has something in it. Name a directory that does not exist yet, or an empty one.`;
 
+/**
+ * The target could not be read at all — no permission, or a file somewhere in
+ * the path. Said here, before anything is written, because the alternative is
+ * the same failure in the middle of writing.
+ */
+export const cannotRead = (named: string, problem: string): string =>
+  [
+    `\`${named}\` cannot be read, so there is no telling what is there:`,
+    "",
+    `  ${problem}`,
+    "",
+    "Name a directory that does not exist yet, or one you can write to."
+  ].join("\n");
+
 export const noDescription = (): string =>
   "Say in one line what the agent does: it goes on its card, and it is the first line of its soul.";
 
