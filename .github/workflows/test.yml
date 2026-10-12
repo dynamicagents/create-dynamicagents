@@ -50,26 +50,19 @@ jobs:
       # What `npm create dynamicagents` does, against the tarball this commit
       # would publish: install it without devDependencies, outside the repo, and
       # run its bin. The only check that sees `files`, `bin` and `dependencies`
-      # the way a user does.
+      # the way a user does — and all it asserts is that the bin runs, because
+      # what the bin *says* is `src/cli.spec.ts`'s, where an assertion can be
+      # read in a diff and run on a laptop.
       #
-      # Every answer arrives as a flag, because CI has no TTY to ask in — and
-      # the run that gives none has to exit 1 saying so, which is the second
-      # command here. `scaffold.yml` is the job that installs what this writes.
+      # Every answer arrives as a flag, because there is no TTY here to ask in.
+      # The tarball's name is derived rather than read: `npm pack --silent`
+      # shares its stdout with whatever a lifecycle script prints.
       - name: The packed tarball runs
         run: |
           set -euo pipefail
-          tarball="$PWD/$(npm pack --silent)"
+          named=$(node -p 'const p = require("./package.json"); `${p.name}-${p.version}.tgz`')
+          npm pack --silent --pack-destination "$RUNNER_TEMP" >/dev/null
           cd "$RUNNER_TEMP"
-          npm exec --yes --package="$tarball" -- create-dynamicagents \
+          npm exec --yes --package="$RUNNER_TEMP/$named" -- create-dynamicagents \
             agent generic demo \
             --name demo --description "A demo agent" --yes --dry-run
-
-          # No answers and no terminal: it must refuse, and name the flags.
-          set +e
-          out=$(npm exec --yes --package="$tarball" -- create-dynamicagents agent 2>&1)
-          status=$?
-          set -e
-          test "$status" -eq 1 || { echo "expected exit 1, got $status"; exit 1; }
-          grep -q -- "--description" <<<"$out" || {
-            echo "the refusal did not name the flags:"; echo "$out"; exit 1;
-          }

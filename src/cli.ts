@@ -2,7 +2,6 @@
 import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import { parseArgs } from "node:util";
 import {
   cancel,
   confirm,
@@ -16,26 +15,40 @@ import {
   spinner,
   text
 } from "@clack/prompts";
-import {
-  BLUEPRINTS,
-  blueprintOf,
-  type Blueprint
-} from "./agent/offer/blueprints.js";
+import { BLUEPRINTS } from "./agent/offer/blueprints.js";
 import { CAPABILITIES } from "./agent/offer/capabilities.js";
-import { displayName, validateModelId, validateTenant } from "./agent/names.js";
+import { displayName } from "./agent/names.js";
 import type { AgentSpec, Capability } from "./agent/spec.js";
+import {
+  asBlueprint,
+  asDescription,
+  asKind,
+  asModelId,
+  asTenant,
+  replyTo,
+  whyNot,
+  type Reply
+} from "./cli/answers.js";
+import { read } from "./cli/args.js";
 import { installProject } from "./cli/install.js";
-import { KINDS, kindOf, type Kind } from "./cli/kinds.js";
+import { KINDS } from "./cli/kinds.js";
 import * as say from "./cli/messages.js";
-import { plan, type Target, type TargetState } from "./cli/plan.js";
+import {
+  plan,
+  whyNotTarget,
+  type Target,
+  type TargetState
+} from "./cli/plan.js";
 import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train.js";
 import { writeProject } from "./cli/write.js";
 
 /**
  * The bin: it reads its arguments, asks, writes, installs and prints. Every
  * string it says is in `./cli/messages.ts`, every rule it applies is in a pure
- * module in `./cli/` beside it, and what it would write is `./cli/plan.ts`'s —
- * so all of that has a spec and none of it needs a process.
+ * module in `./cli/` beside it — the command line is `./cli/args.ts`'s, what an
+ * answer has to be and whether to ask again is `./cli/answers.ts`'s, and what it
+ * would write is `./cli/plan.ts`'s — so all of that has a spec and none of it
+ * needs a process.
  *
  * `./cli/` is this half: one run of the command, from the questions to the
  * install. `./agent/` is the other, and the only thing it is about is the
@@ -47,6 +60,39 @@ import { writeProject } from "./cli/write.js";
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8")
 ) as { version: string };
+
+const argv = read(process.argv.slice(2));
+
+/**
+ * One line on stdout, waited for.
+ *
+ * `process.stdout.write` is asynchronous when stdout is a pipe, and
+ * `process.exit()` does not wait for what is still queued — so printing and
+ * exiting in the same breath cuts the output off at the pipe's buffer, in
+ * exactly the case the two flags below are printed for.
+ */
+const print = (text: string): Promise<void> =>
+  new Promise((resolve) => {
+    // The callback also carries a write error — a closed pipe, say — and this
+    // run has nothing to do about one but leave, which is what resolving does.
+    process.stdout.write(`${text}\n`, () => resolve());
+  });
+
+/**
+ * `--help` and `--version` answer and leave, before the frame opens and whether
+ * or not there is a terminal to open one in.
+ *
+ * Plain on stdout, alone among everything this prints: both are read in a pipe
+ * as often as in a terminal, and clack's bars and colour are noise in one.
+ */
+if (argv.want === "help") {
+  await print(say.help(version));
+  process.exit(0);
+}
+if (argv.want === "version") {
+  await print(version);
+  process.exit(0);
+}
 
 const interactive = process.stdin.isTTY === true;
 
@@ -83,20 +129,38 @@ function answered<T>(value: T): Exclude<T, symbol> {
 }
 
 /**
- * A flag, or the answer to a question, or — with no terminal to ask in — a stop.
+ * An answer, out of a decision `./cli/answers.ts` has already made: the value
+ * the command line gave, or the question it takes to get a better one, or a
+ * stop.
+ *
+ * The sentence is printed above the prompt rather than inside it, because
+ * clack's own error line appears only once something has been typed — and what
+ * arrived on the command line is already wrong.
  *
  * `NoInfer` keeps the prompt's cancel symbol out of the answer's type: clack
  * answers `T | symbol`, and without it `T` would widen to include the symbol at
  * every call site.
  */
-async function required<T>(
-  flag: T | undefined,
-  ask: () => Promise<NoInfer<T> | symbol>
+async function settle<T>(
+  reply: Reply<T>,
+  ask: (initial?: string) => Promise<NoInfer<T> | symbol>
 ): Promise<T> {
-  if (flag !== undefined) return flag;
-  if (!interactive) stop(say.noTerminal());
-  return answered(await ask());
+  if (reply.kind === "use") return reply.value;
+  if (reply.kind === "stop") stop(reply.problem);
+  if (reply.problem !== undefined) log.warn(reply.problem);
+  return answered(await ask(reply.initial));
 }
+
+/**
+ * What was typed at a prompt, trimmed.
+ *
+ * Every judge trims what it judges, and an answer that arrived at a prompt
+ * instead has to be treated the same way: a tenant id with a space around it is
+ * a directory and a class name with a space in them, and a model id with one is
+ * an id Workers AI does not have.
+ */
+const typed = (answer: string | symbol): string | symbol =>
+  typeof answer === "string" ? answer.trim() : answer;
 
 /** A flag, or the answer to a question, or its default where nobody can be asked. */
 async function optional<T>(
@@ -109,72 +173,11 @@ async function optional<T>(
   return answered(await ask());
 }
 
-let flags: {
-  name?: string;
-  description?: string;
-  dir?: string;
-  model?: string;
-  subagent?: boolean;
-  browser?: boolean;
-  yes?: boolean;
-  "dry-run"?: boolean;
-};
-let positionals: string[];
-try {
-  const parsed = parseArgs({
-    args: process.argv.slice(2),
-    allowPositionals: true,
-    options: {
-      name: { type: "string" },
-      description: { type: "string" },
-      dir: { type: "string" },
-      model: { type: "string" },
-      // `allowNegative` is what makes `--no-subagent` an answer rather than an
-      // unknown flag, and leaving these without a default is what tells "not
-      // given" from "given false".
-      subagent: { type: "boolean" },
-      browser: { type: "boolean" },
-      yes: { type: "boolean" },
-      "dry-run": { type: "boolean" }
-    },
-    allowNegative: true
-  });
-  flags = parsed.values;
-  positionals = parsed.positionals;
-} catch (err) {
-  intro(say.title(version));
-  stop(`${(err as Error).message}\n\n${say.noTerminal()}`);
-}
+intro(say.title(version));
 
-async function chooseKind(arg: string | undefined): Promise<Kind> {
-  const named = arg === undefined ? undefined : kindOf(arg);
-  if (arg !== undefined && named === undefined) stop(say.unknownKind(arg));
-  return required(named, () =>
-    select({
-      message: say.question,
-      options: KINDS.map((kind) => ({
-        value: kind,
-        label: kind.label,
-        hint: kind.hint
-      }))
-    })
-  );
-}
+if (argv.want === "trouble") stop(say.badArgument(argv.trouble));
 
-async function chooseBlueprint(arg: string | undefined): Promise<Blueprint> {
-  const named = arg === undefined ? undefined : blueprintOf(arg);
-  if (arg !== undefined && named === undefined) stop(say.unknownBlueprint(arg));
-  return required(named, () =>
-    select({
-      message: say.whichAgent,
-      options: BLUEPRINTS.map((entry) => ({
-        value: entry,
-        label: entry.label,
-        hint: entry.hint
-      }))
-    })
-  );
-}
+const { flags, positionals } = argv;
 
 /**
  * What is at `dir` already — the one filesystem read the plan needs.
@@ -195,7 +198,37 @@ async function targetState(dir: string): Promise<TargetState> {
   }
 }
 
-async function chooseModel(): Promise<string> {
+/**
+ * Where the project would go, judged there and then.
+ *
+ * No question asks for a directory, so one that will not do is a stop rather
+ * than a re-prompt — but it is a stop at the point the directory arrived, which
+ * for `--dir` and for a third argument is before the first question.
+ */
+async function targetAt(named: string): Promise<Target> {
+  const dir = path.resolve(process.cwd(), named);
+  let state: TargetState;
+  try {
+    state = await targetState(dir);
+  } catch (err) {
+    stop(say.cannotRead(named, (err as Error).message));
+  }
+  const target: Target = { named, dir, state };
+  const problem = whyNotTarget(target);
+  if (problem !== undefined) stop(problem);
+  return target;
+}
+
+/** The id prompt, which a `--model` that will not do arrives straight at. */
+const askModelId = (initial?: string): Promise<string | symbol> =>
+  text({
+    message: say.askModelId,
+    placeholder: DEFAULT_MODEL_ID,
+    initialValue: initial,
+    validate: whyNot(asModelId)
+  });
+
+async function chooseModel(): Promise<string | symbol> {
   const choice = answered(
     await select({
       message: say.askModel,
@@ -206,18 +239,22 @@ async function chooseModel(): Promise<string> {
     })
   );
   if (choice === "default") return DEFAULT_MODEL_ID;
-  return answered(
-    await text({
-      message: say.askModelId,
-      placeholder: DEFAULT_MODEL_ID,
-      validate: (value) => validateModelId(value ?? "")
-    })
-  );
+  return typed(await askModelId());
 }
 
-intro(say.title(version));
+const kind = await settle(
+  replyTo(positionals[0], asKind, { interactive }),
+  () =>
+    select({
+      message: say.question,
+      options: KINDS.map((entry) => ({
+        value: entry,
+        label: entry.label,
+        hint: entry.hint
+      }))
+    })
+);
 
-const kind = await chooseKind(positionals[0]);
 if (!kind.ready) {
   // clack wraps a note with `trim: false`, so a line that breaks at a space
   // would start with it.
@@ -228,26 +265,55 @@ if (!kind.ready) {
 
 // --- an agent ---------------------------------------------------------------
 
-const blueprint = await chooseBlueprint(positionals[1]);
+// A directory that was named is judged here: first of everything about the
+// agent, and before any question about it. Not before the question above it,
+// because a directory is only where an *agent* goes — the kind that writes one
+// is the one this is relevant to, and a kind that writes nothing yet has a note
+// of its own to print instead.
+const namedDir = flags.dir ?? positionals[2];
+const judgedDir = namedDir === undefined ? undefined : await targetAt(namedDir);
 
-const tenant = (
-  await required(flags.name, () =>
-    text({
-      message: say.askTenant,
-      placeholder: say.tenantPlaceholder,
-      validate: (value) => validateTenant(value ?? "")
+const blueprint = await settle(
+  replyTo(positionals[1], asBlueprint, { interactive }),
+  () =>
+    select({
+      message: say.whichAgent,
+      options: BLUEPRINTS.map((entry) => ({
+        value: entry,
+        label: entry.label,
+        hint: entry.hint
+      }))
     })
-  )
-).trim();
+);
 
-const description = (
-  await required(flags.description, () =>
-    text({
-      message: say.askDescription,
-      placeholder: say.descriptionPlaceholder
-    })
-  )
-).trim();
+const tenant = await settle(
+  replyTo(flags.name, asTenant, { interactive, named: "--name" }),
+  async (initial) =>
+    typed(
+      await text({
+        message: say.askTenant,
+        placeholder: say.tenantPlaceholder,
+        initialValue: initial,
+        validate: whyNot(asTenant)
+      })
+    )
+);
+
+const description = await settle(
+  replyTo(flags.description, asDescription, {
+    interactive,
+    named: "--description"
+  }),
+  async (initial) =>
+    typed(
+      await text({
+        message: say.askDescription,
+        placeholder: say.descriptionPlaceholder,
+        initialValue: initial,
+        validate: whyNot(asDescription)
+      })
+    )
+);
 
 const subAgent = await optional(
   flags.subagent,
@@ -277,23 +343,19 @@ const capabilities = await optional<Capability[]>(
   []
 );
 
-// Trimmed here, like the two answers above: every validator trims before it
-// judges, so an id with spaces around it passes the plan, and writing it
-// untrimmed into `tuning.ts` is a model id Workers AI does not have.
-const modelId = (
-  await optional(flags.model, () => chooseModel(), DEFAULT_MODEL_ID)
-).trim();
+const modelId = await settle(
+  replyTo(flags.model, asModelId, {
+    interactive,
+    named: "--model",
+    fallback: DEFAULT_MODEL_ID
+  }),
+  // A `--model` that will not do means a model was chosen deliberately, so the
+  // menu is skipped and the id itself is asked for, on what was typed.
+  async (initial) =>
+    initial === undefined ? chooseModel() : typed(await askModelId(initial))
+);
 
-const named = flags.dir ?? positionals[2] ?? tenant;
-const dir = path.resolve(process.cwd(), named);
-
-let state: TargetState;
-try {
-  state = await targetState(dir);
-} catch (err) {
-  stop(say.cannotRead(named, (err as Error).message));
-}
-const target: Target = { named, dir, state };
+const target = judgedDir ?? (await targetAt(tenant));
 
 const spec: AgentSpec = {
   tenant,
