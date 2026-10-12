@@ -1,5 +1,5 @@
-import type { AgentNames, AgentSpec } from "../../spec.js";
-import { jsonArrayProp, jsonObject } from "../text.js";
+import type { AgentNames, AgentSpec } from "../../spec";
+import { jsonArrayProp, jsonObject } from "../text";
 
 /**
  * `wrangler.jsonc` — this agent's own deployment.

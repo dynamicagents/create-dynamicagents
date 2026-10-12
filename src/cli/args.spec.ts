@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OPTIONS, read, type Flags } from "./args.js";
+import { OPTIONS, read, type Flags } from "./args";
 
 /**
  * Reading the command line, and the reason it is a module: `src/cli.ts` runs

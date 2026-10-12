@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as prettier from "prettier";
-import { projectFiles } from "./files.js";
-import { specs, variants } from "./fixtures.js";
+import { projectFiles } from "./files";
+import { specs, variants } from "./fixtures";
 
 /**
  * Everything this CLI writes is already formatted.

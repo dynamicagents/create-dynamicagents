@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BLUEPRINTS, blueprintOf } from "./blueprints.js";
+import { BLUEPRINTS, blueprintOf } from "./blueprints";
 
 describe("BLUEPRINTS", () => {
   it("offers the generic agent", () => {

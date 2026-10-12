@@ -2,7 +2,7 @@
  * The tenant id, what it has to satisfy, and everything derived from it.
  * Pure, so the spec needs no process.
  */
-import type { AgentNames } from "./spec.js";
+import type { AgentNames } from "./spec";
 
 /**
  * A tenant id: lowercase words joined by single dashes.

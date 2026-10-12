@@ -1,5 +1,6 @@
 node_modules/
 dist/
+build-meta.json
 
 # Agent config, written by tools or linked in. A checkout without symlinks
 # writes each link as a file holding its target, which --check would fail.

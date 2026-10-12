@@ -1,4 +1,4 @@
-import type { AgentNames, AgentSpec } from "../../spec.js";
+import type { AgentNames, AgentSpec } from "../../spec";
 
 /** `<dir>/definition.ts` — the tenant, its card and its Durable Object. */
 export const definitionTs = (

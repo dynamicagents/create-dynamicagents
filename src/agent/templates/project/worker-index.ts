@@ -1,5 +1,5 @@
-import type { AgentNames, AgentSpec } from "../../spec.js";
-import { namedFrom } from "../text.js";
+import type { AgentNames, AgentSpec } from "../../spec";
+import { namedFrom } from "../text";
 
 /** `src/index.ts` — the Worker entry: the exports, the mount, the routes. */
 export function indexTs(spec: AgentSpec, n: AgentNames): string {

@@ -13,9 +13,9 @@
  * a terminal and a refusal before the first question without one, instead of
  * five answered questions and a refusal at the end.
  */
-import { validateModelId, validateTenant } from "../agent/names.js";
-import { blueprintOf, type Blueprint } from "../agent/offer/blueprints.js";
-import { kindOf, type Kind } from "./kinds.js";
+import { validateModelId, validateTenant } from "../agent/names";
+import { blueprintOf, type Blueprint } from "../agent/offer/blueprints";
+import { kindOf, type Kind } from "./kinds";
 import {
   badValue,
   describeOneLine,
@@ -24,7 +24,7 @@ import {
   noTerminal,
   unknownBlueprint,
   unknownKind
-} from "./messages.js";
+} from "./messages";
 
 /** A value this run can use, or the one sentence saying why it cannot. */
 export type Judged<T> = { value: T } | { problem: string };

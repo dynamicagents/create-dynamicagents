@@ -1,5 +1,5 @@
-import type { AgentSpec } from "../../spec.js";
-import { quoted, stringProp } from "../text.js";
+import type { AgentSpec } from "../../spec";
+import { quoted, stringProp } from "../text";
 
 interface Skill {
   id: string;

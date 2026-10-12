@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { KINDS, kindOf } from "./kinds.js";
+import { KINDS, kindOf } from "./kinds";
 
 describe("KINDS", () => {
   it("offers a gate, a leader and an agent, in that order", () => {

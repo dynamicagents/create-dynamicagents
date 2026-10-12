@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BLUEPRINTS } from "../agent/offer/blueprints.js";
-import { projectFiles } from "../agent/files.js";
-import { specs } from "../agent/fixtures.js";
-import { OPTIONS } from "./args.js";
-import { KINDS, kindOf } from "./kinds.js";
+import { BLUEPRINTS } from "../agent/offer/blueprints";
+import { projectFiles } from "../agent/files";
+import { specs } from "../agent/fixtures";
+import { OPTIONS } from "./args";
+import { KINDS, kindOf } from "./kinds";
 import {
   badArgument,
   badValue,
@@ -24,8 +24,8 @@ import {
   title,
   WEBSITE,
   workInProgress
-} from "./messages.js";
-import { MODELS_URL } from "../train.js";
+} from "./messages";
+import { MODELS_URL } from "../train";
 
 /** Prettier's print width, which is what these messages are laid out for. */
 const PRINT_WIDTH = 80;

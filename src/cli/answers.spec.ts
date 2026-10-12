@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateModelId, validateTenant } from "../agent/names.js";
+import { validateModelId, validateTenant } from "../agent/names";
 import {
   asBlueprint,
   asDescription,
@@ -10,8 +10,8 @@ import {
   replyTo,
   whyNot,
   type Judged
-} from "./answers.js";
-import { noTerminal } from "./messages.js";
+} from "./answers";
+import { noTerminal } from "./messages";
 
 /**
  * What a value has to be, and what to do about one that is not.

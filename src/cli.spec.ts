@@ -6,9 +6,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { asTenant, whyNot } from "./cli/answers.js";
-import { needsShell } from "./cli/install.js";
-import * as say from "./cli/messages.js";
+import { asTenant, whyNot } from "./cli/answers";
+import { needsShell } from "./cli/install";
+import * as say from "./cli/messages";
 
 /**
  * `dist/cli.js`, run the way a user runs it: one process per case, asserting
@@ -52,12 +52,17 @@ const { version } = JSON.parse(
 /** An escape sequence, which is the one thing `--help` must not carry. */
 const ESCAPE = String.fromCharCode(27);
 
-/** The newest thing the build reads, so that a `dist/` behind it is rebuilt. */
+/**
+ * The newest thing the build reads, so that a `dist/` behind it is rebuilt.
+ *
+ * `scripts/build.mjs` is one of them: it *is* the build, and esbuild reads
+ * `tsconfig.json` and the `engines` in `package.json` on the way through.
+ */
 function newestInput(): number {
   const inputs = [
     path.join(ROOT, "package.json"),
     path.join(ROOT, "tsconfig.json"),
-    path.join(ROOT, "tsconfig.build.json")
+    path.join(ROOT, "scripts", "build.mjs")
   ];
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {

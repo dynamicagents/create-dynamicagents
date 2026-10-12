@@ -31,7 +31,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build": "node scripts/build.mjs",
     "format": "prettier --write .",
     "lint": "eslint .",
     "check": "prettier --check . && eslint . && tsc && npm run build",
@@ -42,11 +42,10 @@
     "prepublishOnly": "npm run check && npm test && npm run verify:package",
     "prepare": "husky"
   },
-  "dependencies": {
-    "@clack/prompts": "^1.8.1"
-  },
   "devDependencies": {
+    "@clack/prompts": "^1.8.1",
     "@types/node": "^24.13.6",
+    "esbuild": "^0.28.2",
     "eslint": "^10.10.0",
     "husky": "^9.1.7",
     "prettier": "^3.9.6",
@@ -58,6 +57,7 @@
     "node": ">=24"
   },
   "allowScripts": {
+    "esbuild": false,
     "fsevents": false
   }
 }

@@ -1,5 +1,5 @@
-import type { AgentSpec } from "../../spec.js";
-import { stringProp } from "../text.js";
+import type { AgentSpec } from "../../spec";
+import { stringProp } from "../text";
 
 /** `src/host-manifest.ts` — the stub card at the well-known path. */
 export function hostManifestTs(spec: AgentSpec): string {

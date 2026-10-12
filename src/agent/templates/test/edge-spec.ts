@@ -1,4 +1,4 @@
-import type { AgentSpec } from "../../spec.js";
+import type { AgentSpec } from "../../spec";
 
 /**
  * `test/edge.spec.ts` — the zero-trust edge, with no model involved.

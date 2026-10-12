@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { needsShell } from "./install.js";
+import { needsShell } from "./install";
 
 /**
  * Installing is npm's job, and nothing here runs it: what this pins is the one

@@ -15,10 +15,10 @@ import {
   spinner,
   text
 } from "@clack/prompts";
-import { BLUEPRINTS } from "./agent/offer/blueprints.js";
-import { CAPABILITIES } from "./agent/offer/capabilities.js";
-import { displayName } from "./agent/names.js";
-import type { AgentSpec, Capability } from "./agent/spec.js";
+import { BLUEPRINTS } from "./agent/offer/blueprints";
+import { CAPABILITIES } from "./agent/offer/capabilities";
+import { displayName } from "./agent/names";
+import type { AgentSpec, Capability } from "./agent/spec";
 import {
   asBlueprint,
   asDescription,
@@ -28,19 +28,14 @@ import {
   replyTo,
   whyNot,
   type Reply
-} from "./cli/answers.js";
-import { read } from "./cli/args.js";
-import { installProject } from "./cli/install.js";
-import { KINDS } from "./cli/kinds.js";
-import * as say from "./cli/messages.js";
-import {
-  plan,
-  whyNotTarget,
-  type Target,
-  type TargetState
-} from "./cli/plan.js";
-import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train.js";
-import { writeProject } from "./cli/write.js";
+} from "./cli/answers";
+import { read } from "./cli/args";
+import { installProject } from "./cli/install";
+import { KINDS } from "./cli/kinds";
+import * as say from "./cli/messages";
+import { plan, whyNotTarget, type Target, type TargetState } from "./cli/plan";
+import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train";
+import { writeProject } from "./cli/write";
 
 /**
  * The bin: it reads its arguments, asks, writes, installs and prints. Every

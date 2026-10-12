@@ -1,11 +1,11 @@
 /** What `npm create dynamicagents` prints. Pure, so the spec needs no process. */
-import { BLUEPRINTS } from "../agent/offer/blueprints.js";
-import type { GeneratedFile } from "../agent/files.js";
+import { BLUEPRINTS } from "../agent/offer/blueprints";
+import type { GeneratedFile } from "../agent/files";
 // Types only: what this knows about a flag is what it says about one, and the
 // keys it has to say it about.
-import type { OPTIONS, Trouble } from "./args.js";
-import { KINDS, type Kind } from "./kinds.js";
-import { DEFAULT_MODEL_ID, MODELS_URL } from "../train.js";
+import type { OPTIONS, Trouble } from "./args";
+import { KINDS, type Kind } from "./kinds";
+import { DEFAULT_MODEL_ID, MODELS_URL } from "../train";
 
 export const WEBSITE = "https://dynamicagents.dev";
 

@@ -11,16 +11,16 @@
  * judges as each answer arrives — so a refusal here is a spec on what reaches
  * `projectFiles`, not the sentence somebody is meant to read.
  */
-import { projectFiles, type GeneratedFile } from "../agent/files.js";
-import type { AgentSpec } from "../agent/spec.js";
+import { projectFiles, type GeneratedFile } from "../agent/files";
+import type { AgentSpec } from "../agent/spec";
 import {
   asBlueprint,
   asDescription,
   asModelId,
   asTenant,
   type Judged
-} from "./answers.js";
-import { notEmpty } from "./messages.js";
+} from "./answers";
+import { notEmpty } from "./messages";
 
 /** What the CLI found at the path the project would go. */
 export type TargetState =

@@ -1,4 +1,4 @@
-import type { AgentNames } from "../../spec.js";
+import type { AgentNames } from "../../spec";
 
 /** `<dir>/children.ts` — the `general` sub-agent, bound to a class. */
 export const childrenTs = (

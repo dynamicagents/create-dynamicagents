@@ -11,8 +11,8 @@
  * no plugins does not depend on `@dynamicagents/plugins`, and one with no
  * sub-agent does not depend on `zod`.
  */
-import { RUNTIME, TOOLCHAIN, TRAIN } from "../../train.js";
-import type { AgentSpec } from "../spec.js";
+import { RUNTIME, TOOLCHAIN, TRAIN } from "../../train";
+import type { AgentSpec } from "../spec";
 
 /** npm keeps a manifest's dependency maps sorted, so these are too. */
 const sorted = (map: Record<string, string>): Record<string, string> =>

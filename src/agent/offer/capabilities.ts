@@ -14,7 +14,7 @@
  * wants a container, a Dockerfile, credentials and an egress policy, which is a
  * blueprint of its own rather than a line in this list.
  */
-import type { Capability } from "../spec.js";
+import type { Capability } from "../spec";
 
 export interface CapabilityOption {
   value: Capability;

@@ -1,4 +1,4 @@
-import type { AgentSpec } from "../../spec.js";
+import type { AgentSpec } from "../../spec";
 
 /**
  * `<dir>/plugins.ts` — the one file to edit to change what this agent can do.

@@ -1,6 +1,6 @@
-import type { AgentSpec } from "../../spec.js";
-import { MODELS_URL } from "../../../train.js";
-import { quoted } from "../text.js";
+import type { AgentSpec } from "../../spec";
+import { MODELS_URL } from "../../../train";
+import { quoted } from "../text";
 
 /**
  * `<dir>/tuning.ts` — the numbers.

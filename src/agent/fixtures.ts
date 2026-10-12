@@ -6,11 +6,12 @@
  * and a multi-word tenant id, which is where a derived class or binding name
  * goes wrong.
  *
- * Not a `.spec.ts` file, so `tsconfig.build.json` excludes it by name: a user
- * installs `dist`, and nothing in it should be there for the tests.
+ * Not a `.spec.ts` file, and it does not need to be: a user installs one
+ * bundle, and nothing but a spec imports this, so the bundle rooted at the bin
+ * cannot reach it. `scripts/verify-package.mjs` skips it for the same reason.
  */
-import { displayName } from "./names.js";
-import type { AgentSpec } from "./spec.js";
+import { displayName } from "./names";
+import type { AgentSpec } from "./spec";
 
 const base = (tenant: string): AgentSpec => ({
   tenant,

@@ -1,6 +1,6 @@
-import { MERGE_CAVEAT, mergeSteps } from "../merge-notes.js";
-import type { AgentNames, AgentSpec } from "../../spec.js";
-import { mdTable } from "../text.js";
+import { MERGE_CAVEAT, mergeSteps } from "../merge-notes";
+import type { AgentNames, AgentSpec } from "../../spec";
+import { mdTable } from "../text";
 
 /**
  * `AGENTS.md` — how to work in a generated project.

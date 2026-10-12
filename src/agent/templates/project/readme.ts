@@ -1,6 +1,6 @@
-import { MODELS_URL } from "../../../train.js";
-import type { AgentNames, AgentSpec } from "../../spec.js";
-import { mdTable } from "../text.js";
+import { MODELS_URL } from "../../../train";
+import type { AgentNames, AgentSpec } from "../../spec";
+import { mdTable } from "../text";
 
 /** `README.md` — what this is, how to run it, how to put it in front of people. */
 export function readmeMd(spec: AgentSpec, n: AgentNames): string {
