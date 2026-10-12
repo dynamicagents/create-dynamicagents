@@ -21,6 +21,13 @@ sets the rules:
   which is only ever about the project being written. `src/train.ts` is at the
   root with the bin because both halves read it.
 
+  One spec is the exception, and has to be: `src/cli.spec.ts` spawns
+  `dist/cli.js` and asserts exit codes and what reaches stdout, because an exit
+  code and a stream are what it is about and no pure function has either. It
+  builds when `dist/` is missing or older than `src/`, so `npm test` alone still
+  works. Everything else stays under the rule — a spec that wants a process to
+  tell it about a _string_ is a spec in the wrong place.
+
 ---
 
 ## What it writes, and why that is pinned
@@ -75,7 +82,9 @@ node dist/cli.js           # after a build, what a user sees
 ```
 
 `npm test` alone will not catch a type error; vitest transpiles specs without
-typechecking them.
+typechecking them. It does build, though, when `src/cli.spec.ts` finds `dist/`
+missing or behind `src/` — that spec runs the real bin, so there is nothing for
+it to assert against otherwise.
 
 None of those installs anything, so none of them proves a generated project
 works. That is one command, and worth running after a change to a template:
