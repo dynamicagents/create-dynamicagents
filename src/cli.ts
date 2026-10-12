@@ -34,7 +34,7 @@ import { installProject } from "./cli/install";
 import { KINDS } from "./cli/kinds";
 import * as say from "./cli/messages";
 import { plan, whyNotTarget, type Target, type TargetState } from "./cli/plan";
-import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train";
+import { DEFAULT_MODEL_ID } from "./train";
 import { writeProject } from "./cli/write";
 
 /**
@@ -359,8 +359,7 @@ const spec: AgentSpec = {
   blueprint: blueprint.value,
   subAgent,
   capabilities,
-  modelId,
-  compatibilityDate: COMPATIBILITY_DATE
+  modelId
 };
 
 const planned = plan(spec, target);

@@ -26,8 +26,6 @@ export interface AgentSpec {
   capabilities: readonly Capability[];
   /** The Workers AI model id for the turn and for compaction. */
   modelId: string;
-  /** The Workers compatibility date `wrangler.jsonc` declares. */
-  compatibilityDate: string;
 }
 
 /**

@@ -1,3 +1,4 @@
+import { COMPATIBILITY_DATE } from "../../../train";
 import type { AgentNames, AgentSpec } from "../../spec";
 import { jsonArrayProp, jsonObject } from "../text";
 
@@ -8,6 +9,10 @@ import { jsonArrayProp, jsonObject } from "../text";
  * layout here is the layout the project keeps. The comments are the point of
  * the file as much as the values: every one of them states something that
  * fails far from here when it is wrong.
+ *
+ * The compatibility date is read from `src/train.ts` here rather than carried
+ * on the spec: nothing asks for it — no flag, no prompt — so it is a pin like
+ * `NODE_ENGINE` in `./package-json.ts`, and read where it is written.
  */
 export function wranglerJsonc(spec: AgentSpec, n: AgentNames): string {
   const browser = spec.capabilities.includes("browser");
@@ -55,7 +60,7 @@ export function wranglerJsonc(spec: AgentSpec, n: AgentNames): string {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "${spec.tenant}",
   "main": "src/index.ts",
-  "compatibility_date": "${spec.compatibilityDate}",
+  "compatibility_date": "${COMPATIBILITY_DATE}",
   "compatibility_flags": ["nodejs_compat"],
 
   // **One origin, and keep it.**
