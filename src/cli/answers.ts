@@ -44,6 +44,12 @@ export const DESCRIPTION_MAX = 200;
  * which is what `quoted()`'s single-quoted branch would emit for a description
  * holding a double quote; in the second it ends the table. `--description` is
  * how one arrives — clack's prompt cannot carry a newline.
+ *
+ * Tested against the trimmed value, deliberately, because the trimmed value is
+ * what gets written: `--description $'A demo agent\n'` is one line with a
+ * terminator around it, so it is trimmed and used, while `$'A demo\nagent'` is
+ * two lines and is refused. The rule is about what reaches the file, not about
+ * how the argument was typed.
  */
 const LINE_BREAK = /[\n\r\u2028\u2029]/;
 
@@ -70,6 +76,7 @@ export const asTenant: Judge<string> = (raw) => {
   return problem === undefined ? { value: raw.trim() } : { problem };
 };
 
+/** The one line on the card: trimmed, and then held to being one line. */
 export const asDescription: Judge<string> = (raw) => {
   const value = raw.trim();
   if (value === "") return { problem: noDescription() };

@@ -75,6 +75,20 @@ describe("the judges", () => {
       /one line/i
     );
   });
+
+  it("take one line with a terminator around it, and write the line", () => {
+    // `--description $'A demo agent\n'` is one line, and the value that
+    // reaches the templates is the trimmed one — which is what the rule is
+    // about. Two lines are still two lines, terminator or no terminator.
+    for (const around of ["\n", "\r\n", "\u2028", "\u2029", " \n "]) {
+      expect(valueIn(asDescription(`${around}A demo agent${around}`))).toBe(
+        "A demo agent"
+      );
+    }
+    expect(problemIn(asDescription("\nA demo\nagent\n"))).toMatch(/one line/i);
+    // And nothing but terminators is nothing at all, not one empty line.
+    expect(problemIn(asDescription("\n\n"))).toMatch(/card/);
+  });
 });
 
 describe("whyNot", () => {

@@ -64,6 +64,21 @@ const { version } = JSON.parse(
 const argv = read(process.argv.slice(2));
 
 /**
+ * One line on stdout, waited for.
+ *
+ * `process.stdout.write` is asynchronous when stdout is a pipe, and
+ * `process.exit()` does not wait for what is still queued — so printing and
+ * exiting in the same breath cuts the output off at the pipe's buffer, in
+ * exactly the case the two flags below are printed for.
+ */
+const print = (text: string): Promise<void> =>
+  new Promise((resolve) => {
+    // The callback also carries a write error — a closed pipe, say — and this
+    // run has nothing to do about one but leave, which is what resolving does.
+    process.stdout.write(`${text}\n`, () => resolve());
+  });
+
+/**
  * `--help` and `--version` answer and leave, before the frame opens and whether
  * or not there is a terminal to open one in.
  *
@@ -71,11 +86,11 @@ const argv = read(process.argv.slice(2));
  * as often as in a terminal, and clack's bars and colour are noise in one.
  */
 if (argv.want === "help") {
-  process.stdout.write(`${say.help(version)}\n`);
+  await print(say.help(version));
   process.exit(0);
 }
 if (argv.want === "version") {
-  process.stdout.write(`${version}\n`);
+  await print(version);
   process.exit(0);
 }
 
@@ -250,6 +265,14 @@ if (!kind.ready) {
 
 // --- an agent ---------------------------------------------------------------
 
+// A directory that was named is judged here: first of everything about the
+// agent, and before any question about it. Not before the question above it,
+// because a directory is only where an *agent* goes — the kind that writes one
+// is the one this is relevant to, and a kind that writes nothing yet has a note
+// of its own to print instead.
+const namedDir = flags.dir ?? positionals[2];
+const judgedDir = namedDir === undefined ? undefined : await targetAt(namedDir);
+
 const blueprint = await settle(
   replyTo(positionals[1], asBlueprint, { interactive }),
   () =>
@@ -262,12 +285,6 @@ const blueprint = await settle(
       }))
     })
 );
-
-// A directory that was named is judged now, before anything is asked: the
-// alternative is every question answered and then a refusal about the one
-// answer that was there from the start.
-const namedDir = flags.dir ?? positionals[2];
-const judgedDir = namedDir === undefined ? undefined : await targetAt(namedDir);
 
 const tenant = await settle(
   replyTo(flags.name, asTenant, { interactive, named: "--name" }),
