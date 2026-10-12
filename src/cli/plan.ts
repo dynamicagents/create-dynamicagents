@@ -13,6 +13,7 @@
  */
 import { projectFiles, type GeneratedFile } from "../agent/files";
 import type { AgentSpec } from "../agent/spec";
+import { blocking } from "./existing";
 import {
   asBlueprint,
   asDescription,
@@ -28,8 +29,28 @@ export type TargetState =
   | "free"
   /** A directory with no entries at all. */
   | "empty"
+  /**
+   * A directory holding nothing but entries a write leaves where they are — a
+   * `.git` somebody made before running this, a `.DS_Store` Finder wrote. As
+   * good as empty, and treated as such: see `./existing.ts`.
+   */
+  | "ignorable"
   /** A directory with something in it, or a file. */
   | "occupied";
+
+/**
+ * What a directory's entries make of it.
+ *
+ * The judgement itself, so that the one filesystem read in `src/cli.ts` answers
+ * with data and decides nothing. `"free"` is the one state missing from here:
+ * no list of entries can express a path that does not exist.
+ */
+export const stateOf = (entries: readonly string[]): TargetState =>
+  entries.length === 0
+    ? "empty"
+    : blocking(entries).length === 0
+      ? "ignorable"
+      : "occupied";
 
 export interface Target {
   /** The path as the user named it, for a message. */

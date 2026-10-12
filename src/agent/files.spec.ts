@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { projectFiles, type GeneratedFile } from "./files";
 import { specs, variants } from "./fixtures";
 import { names } from "./names";
+import { DEFAULT_MODEL_ID } from "../train";
 
 /**
  * What a generated project consists of, and the wiring that has to agree with
@@ -235,6 +236,17 @@ describe("a capability", () => {
 });
 
 describe("the model", () => {
+  it("is this CLI's own default where none was chosen", () => {
+    // Against `src/train.ts` rather than against the fixture: the fixtures name
+    // the constant, so this is what notices a template that stopped reading it.
+    const tuning = at(
+      projectFiles(specs.full),
+      `${names(specs.full.tenant).dir}/tuning.ts`
+    );
+    expect(tuning).toContain(`modelId: "${DEFAULT_MODEL_ID}"`);
+    expect(tuning).toContain(`compactionModelId: "${DEFAULT_MODEL_ID}"`);
+  });
+
   it("is the one that was chosen, for the turn and for compaction", () => {
     const spec = { ...specs.full, modelId: "@cf/meta/llama-3.3-70b-instruct" };
     const files = projectFiles(spec);

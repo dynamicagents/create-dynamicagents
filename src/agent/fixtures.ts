@@ -12,7 +12,14 @@
  */
 import { displayName } from "./names";
 import type { AgentSpec } from "./spec";
+import { DEFAULT_MODEL_ID } from "../train";
 
+/**
+ * The pin rather than a copy of it: a fixture carrying its own model id is a
+ * spec that compares `src/train.ts` with itself, which is how the generated
+ * `compatibility_date` came to be asserted against the fixture that produced
+ * it. `train.spec.ts` holds this file to naming the constant.
+ */
 const base = (tenant: string): AgentSpec => ({
   tenant,
   name: displayName(tenant),
@@ -20,8 +27,7 @@ const base = (tenant: string): AgentSpec => ({
   blueprint: "generic",
   subAgent: true,
   capabilities: [],
-  modelId: "@cf/zai-org/glm-5.3-flash",
-  compatibilityDate: "2026-07-06"
+  modelId: DEFAULT_MODEL_ID
 });
 
 export const specs = {

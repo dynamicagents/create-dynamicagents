@@ -33,9 +33,15 @@ import { read } from "./cli/args";
 import { installProject } from "./cli/install";
 import { KINDS } from "./cli/kinds";
 import * as say from "./cli/messages";
-import { plan, whyNotTarget, type Target, type TargetState } from "./cli/plan";
-import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train";
-import { writeProject } from "./cli/write";
+import {
+  plan,
+  stateOf,
+  whyNotTarget,
+  type Target,
+  type TargetState
+} from "./cli/plan";
+import { DEFAULT_MODEL_ID } from "./train";
+import { TargetChanged, writeProject } from "./cli/write";
 
 /**
  * The bin: it reads its arguments, asks, writes, installs and prints. Every
@@ -186,7 +192,10 @@ async function targetState(dir: string): Promise<TargetState> {
   try {
     const info = await stat(dir);
     if (!info.isDirectory()) return "occupied";
-    return (await readdir(dir)).length === 0 ? "empty" : "occupied";
+    // What the entries make of the directory is `./cli/plan.ts`'s: one holding
+    // nothing but a `.git` or a `.DS_Store` is as good as empty, and that
+    // judgement belongs beside the refusal rather than in here.
+    return stateOf(await readdir(dir));
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     return "free";
@@ -359,8 +368,7 @@ const spec: AgentSpec = {
   blueprint: blueprint.value,
   subAgent,
   capabilities,
-  modelId,
-  compatibilityDate: COMPATIBILITY_DATE
+  modelId
 };
 
 const planned = plan(spec, target);
@@ -383,7 +391,17 @@ if (flags.yes !== true && interactive) {
   }
 }
 
-await writeProject(target.dir, planned.plan.files);
+try {
+  await writeProject(target.dir, planned.plan.files);
+} catch (err) {
+  // The one failure this has an answer for: something arrived at the target
+  // while the questions were being answered, which is the refusal this run
+  // would have printed before them. Nothing was written. Every other failure
+  // keeps propagating, deliberately — `stop()` ends on "Nothing was built",
+  // and a write that failed partway through cannot promise that.
+  if (!(err instanceof TargetChanged)) throw err;
+  stop(say.notEmpty(target.named));
+}
 log.success(say.wrote(target.named));
 
 const installing = spinner();

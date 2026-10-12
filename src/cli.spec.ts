@@ -227,6 +227,48 @@ describe("a run with no terminal to ask in", () => {
   });
 });
 
+describe("a directory that is as good as empty", () => {
+  /**
+   * The two directories somebody actually arrives with, judged by the built
+   * bin: both used to be refused. `--dry-run`, because what is under test is
+   * the judgement rather than the write — `cli/write.spec.ts` has that on a
+   * real filesystem.
+   */
+  const dryRunInto = (dir: string): Promise<Run> =>
+    bin(
+      "agent",
+      "generic",
+      dir,
+      "--name",
+      "demo",
+      "--description",
+      "A demo agent",
+      "--yes",
+      "--dry-run"
+    );
+
+  it("takes one holding nothing but a repository", async () => {
+    const dir = path.join(workspace, "git-init");
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    const run = await dryRunInto(dir);
+    expect(run.status).toBe(0);
+    expect(run.said).toContain(say.dryRun);
+    expect(existsSync(path.join(dir, ".git"))).toBe(true);
+  });
+
+  it("takes one holding nothing but what the OS left behind", async () => {
+    const dir = path.join(workspace, "finder");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, ".DS_Store"), "", "utf8");
+    const run = await dryRunInto(dir);
+    expect(run.status).toBe(0);
+    // And it says nothing about what it tolerated: there is empty and not
+    // empty, and this directory is empty.
+    expect(run.said).not.toContain(".DS_Store");
+    expect(existsSync(path.join(dir, ".DS_Store"))).toBe(true);
+  });
+});
+
 describe("--dry-run", () => {
   it("prints what it would write, and writes nothing", async () => {
     const dir = path.join(workspace, "demo");

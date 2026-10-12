@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { projectFiles } from "./files";
-import { specs, variants } from "./fixtures";
+import { variants } from "./fixtures";
 import { names } from "./names";
+import type { AgentSpec } from "./spec";
+import { COMPATIBILITY_DATE } from "../train";
 
 /**
  * The generated `wrangler.jsonc`, read as configuration rather than as text.
@@ -10,6 +12,11 @@ import { names } from "./names";
  * worth parsing in a spec: a comment carrying a stray quote or a trailing comma
  * left behind by an edit is a deploy that fails on something nobody can see by
  * reading the diff.
+ *
+ * Every assertion runs against every fixture, `multiWord` included, because
+ * nearly everything in this file is derived from the tenant id — a binding, a
+ * class in the migration, the workflow's name — and a one-word id is the one
+ * shape where a missing join still reads correctly.
  */
 
 /** JSONC, minus the comments. Enough for a file this CLI wrote itself. */
@@ -65,8 +72,7 @@ interface Wrangler {
   secrets: { required: string[] };
 }
 
-const config = (tenant: keyof typeof specs): Wrangler => {
-  const spec = specs[tenant];
+const config = (spec: AgentSpec): Wrangler => {
   const file = projectFiles(spec).find(
     (entry) => entry.path === "wrangler.jsonc"
   );
@@ -74,24 +80,24 @@ const config = (tenant: keyof typeof specs): Wrangler => {
 };
 
 describe.each(variants())("$label", ({ spec }) => {
-  it("parses, comments and all", () => {
-    const parsed = parse(
-      projectFiles(spec).find((file) => file.path === "wrangler.jsonc")!
-        .contents
-    );
-    expect(parsed).toBeTypeOf("object");
-  });
-});
+  const wrangler = config(spec);
+  const n = names(spec.tenant);
 
-describe("the deployment it configures", () => {
-  const wrangler = config("full");
-  const n = names(specs.full.tenant);
+  it("parses, comments and all", () => {
+    expect(wrangler).toBeTypeOf("object");
+  });
 
   it("is named for the tenant, and points at the Worker entry", () => {
-    expect(wrangler.name).toBe(specs.full.tenant);
+    expect(wrangler.name).toBe(spec.tenant);
     expect(wrangler.main).toBe("src/index.ts");
     expect(wrangler.compatibility_flags).toContain("nodejs_compat");
-    expect(wrangler.compatibility_date).toBe(specs.full.compatibilityDate);
+  });
+
+  it("declares the compatibility date this CLI pins", () => {
+    // Against `src/train.ts` itself, not against the fixture that generated
+    // the file: a template that hardcoded a date would otherwise pass here for
+    // as long as the hardcoded date happened to match.
+    expect(wrangler.compatibility_date).toBe(COMPATIBILITY_DATE);
   });
 
   it("serves one origin to start on", () => {
@@ -137,7 +143,10 @@ describe("the deployment it configures", () => {
   });
 
   it("binds the browser only where it is installed", () => {
-    expect(wrangler.browser?.binding).toBe("BROWSER");
-    expect(config("bare").browser).toBeUndefined();
+    // Core checks a plugin's bindings when the agent starts, so the binding
+    // arrives with the plugin or not at all.
+    expect(wrangler.browser?.binding).toBe(
+      spec.capabilities.includes("browser") ? "BROWSER" : undefined
+    );
   });
 });
