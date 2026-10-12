@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { projectFiles } from "../agent/files";
 import { specs } from "../agent/fixtures";
@@ -76,13 +77,36 @@ describe("IGNORABLE", () => {
     // The rule that keeps "tolerated" from ever meaning "we kept your version
     // of a file the project needs ours for": a name on both lists would be a
     // file left in place and a generated file silently missing.
+    //
+    // Asked of `ignorable` itself rather than of the list, and in this
+    // direction: the write tolerates a name case-insensitively, so comparing
+    // spellings would stay green on a generated `.Git` that `ignorable` would
+    // have left in place.
     const written = new Set(
       Object.values(specs).flatMap((spec) =>
         projectFiles(spec).map((file) => file.path.split("/")[0]!)
       )
     );
+    for (const entry of written) {
+      expect(ignorable(entry), entry).toBe(false);
+    }
+    // Both lists are non-empty, so the loop above is a claim and not a
+    // vacuous pass.
+    expect(written.size).toBeGreaterThan(10);
+    expect(IGNORABLE.length).toBeGreaterThan(0);
+  });
+
+  it("is the list README documents", () => {
+    // The rule the flags already follow, for the same reason: a name the write
+    // tolerates and nothing documents is behaviour nobody outside this
+    // repository can predict — somebody reading the README on npm cannot read
+    // `./existing.ts`. So the list arrives whole, here and there.
+    const readme = readFileSync(
+      new URL("../../README.md", import.meta.url),
+      "utf8"
+    );
     for (const entry of IGNORABLE) {
-      expect(written.has(entry), entry).toBe(false);
+      expect(readme, entry).toContain(`\`${entry}\``);
     }
   });
 });

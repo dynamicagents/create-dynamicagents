@@ -56,10 +56,15 @@ The `--` is npm's, not ours: without it, npm keeps the flags for itself.
 | `--help`        | Usage, both ways in, and every flag. Also `-h`.                        |
 | `--version`     | The version that would run. Also `-v`.                                 |
 
-The directory may already exist as long as it is empty. A repository you made
-with `git init` first does not count as content, and neither do the files an
-editor or the OS leaves behind — the project is written around them, and
-nothing of yours is moved or removed.
+The directory may already exist as long as it is empty. These do not count as
+content, so a repository you made with `git init` first is fine, as is one an
+editor or Finder has already touched:
+
+`.git` · `.hg` · `.svn` · `.gitkeep` · `.keep` · `.idea` · `.vscode` ·
+`.DS_Store` · `Thumbs.db` · `desktop.ini`
+
+The project is written around them: nothing of yours is moved or removed.
+Anything else in there and it asks you for a different directory.
 
 A usable answer given up front is not asked for. One that will not do — a tenant
 id that could not become a class name, a model id that is not one — is said

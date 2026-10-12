@@ -120,6 +120,44 @@ describe("writeProject", () => {
     await noStagingLeft();
   });
 
+  it("refuses a name already taken rather than writing over it", async () => {
+    // `rename` replaces a file without a word, so the commit checks each
+    // destination first. In a real run only a race can get a file there, since
+    // every path this writes is one `./existing.ts` refuses to tolerate — so
+    // the collision is staged here deliberately, with a file list naming an
+    // entry the target is allowed to hold.
+    const target = path.join(workspace, "demo");
+    await mkdir(target);
+    await writeFile(path.join(target, "desktop.ini"), "theirs\n", "utf8");
+    await expect(
+      writeProject(target, [{ path: "desktop.ini", contents: "ours\n" }])
+    ).rejects.toThrow(TargetChanged);
+    expect(await readFile(path.join(target, "desktop.ini"), "utf8")).toBe(
+      "theirs\n"
+    );
+    await noStagingLeft();
+  });
+
+  it("moves its own entries back out when the commit fails partway", async () => {
+    // The roll-back, driven rather than reasoned about: `AGENTS.md` lands, then
+    // `desktop.ini` collides, and what the directory is left holding is what it
+    // held before. The commit sorts, so it is always that way round.
+    const target = path.join(workspace, "demo");
+    await mkdir(target);
+    await writeFile(path.join(target, "desktop.ini"), "theirs\n", "utf8");
+    await expect(
+      writeProject(target, [
+        { path: "AGENTS.md", contents: "ours\n" },
+        { path: "desktop.ini", contents: "ours\n" }
+      ])
+    ).rejects.toThrow(TargetChanged);
+    expect(await entries(target)).toEqual(["desktop.ini"]);
+    expect(await readFile(path.join(target, "desktop.ini"), "utf8")).toBe(
+      "theirs\n"
+    );
+    await noStagingLeft();
+  });
+
   it("refuses a directory that stopped being empty, and writes nothing", async () => {
     // The race: judged before the questions, read again at the commit. Only
     // this side of the write can still catch it.

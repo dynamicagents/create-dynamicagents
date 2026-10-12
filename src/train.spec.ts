@@ -69,7 +69,10 @@ describe("the fixtures the specs generate from", () => {
       "utf8"
     );
     expect(source).toContain("DEFAULT_MODEL_ID");
-    expect(source).not.toMatch(/"@cf\//);
+    // Every delimiter a string can open with, not only the one prettier
+    // settles on: a copied value in backticks is left exactly as it was typed,
+    // so a guard that only knew about `"` would pass on it.
+    expect(source).not.toMatch(/["'`]@cf\//);
     expect(DEFAULT_MODEL_ID).toMatch(/^@cf\//);
   });
 });

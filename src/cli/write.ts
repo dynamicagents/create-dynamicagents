@@ -19,6 +19,7 @@
  * moves our own entries back out of the user's directory.
  */
 import {
+  lstat,
   mkdir,
   mkdtemp,
   readdir,
@@ -65,6 +66,13 @@ async function entriesAt(dir: string): Promise<string[]> {
   }
 }
 
+/** Whether anything is at `at` already — a dangling symlink included. */
+const taken = (at: string): Promise<boolean> =>
+  lstat(at).then(
+    () => true,
+    () => false
+  );
+
 /**
  * Move the staged project into a directory that already exists, one top-level
  * entry at a time, and move our own entries back out again if one fails.
@@ -74,12 +82,27 @@ async function entriesAt(dir: string): Promise<string[]> {
  * back stays where it landed and the error is reported: that is the single case
  * that leaves a partial project, and even then nothing of the user's was
  * touched.
+ *
+ * **A destination is checked before it is written to.** `rename` replaces an
+ * existing file without a word, so a name that is taken is refused here rather
+ * than written over — which it can only be through a race, since every path
+ * this writes is one `./existing.ts` refuses to tolerate. What is left is the
+ * window between the check and the rename, and nothing in `node:fs` closes
+ * that one: there is no no-clobber rename, and `link` — which would fail on a
+ * destination that exists — cannot take a directory, and two of these entries
+ * are directories.
+ *
+ * Sorted, so the order entries land in is the same on every filesystem: a
+ * roll-back is easier to reason about, and a spec can rely on which entry
+ * fails.
  */
 async function commitEntries(staging: string, target: string): Promise<void> {
   const landed: string[] = [];
   try {
-    for (const entry of await readdir(staging)) {
-      await rename(path.join(staging, entry), path.join(target, entry));
+    for (const entry of (await readdir(staging)).sort()) {
+      const to = path.join(target, entry);
+      if (await taken(to)) throw new TargetChanged(target, [entry]);
+      await rename(path.join(staging, entry), to);
       landed.push(entry);
     }
   } catch (err) {
