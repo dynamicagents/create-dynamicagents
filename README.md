@@ -56,6 +56,11 @@ The `--` is npm's, not ours: without it, npm keeps the flags for itself.
 | `--help`        | Usage, both ways in, and every flag. Also `-h`.                        |
 | `--version`     | The version that would run. Also `-v`.                                 |
 
+The directory may already exist as long as it is empty. A repository you made
+with `git init` first does not count as content, and neither do the files an
+editor or the OS leaves behind — the project is written around them, and
+nothing of yours is moved or removed.
+
 A usable answer given up front is not asked for. One that will not do — a tenant
 id that could not become a class name, a model id that is not one — is said
 where it was given rather than after every other question: the question comes

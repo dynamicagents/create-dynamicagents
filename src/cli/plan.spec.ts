@@ -33,6 +33,13 @@ describe("plan", () => {
     expect(plan(specs.full, { ...target, state: "empty" }).ok).toBe(true);
   });
 
+  it("plans into one holding nothing but a .git", () => {
+    // `mkdir demo && cd demo && git init` before running this is normal too,
+    // and as far as this CLI is concerned that directory is empty. Which
+    // entries count is `./existing.spec.ts`'s.
+    expect(plan(specs.full, { ...target, state: "ignorable" }).ok).toBe(true);
+  });
+
   it("refuses a directory with something in it", () => {
     const problem = refusal(specs.full, { ...target, state: "occupied" });
     expect(problem).toContain("support");
