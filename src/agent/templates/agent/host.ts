@@ -1,5 +1,5 @@
-import type { AgentNames } from "../../spec.js";
-import { assigned } from "../text.js";
+import type { AgentNames } from "../../spec";
+import { assigned } from "../text";
 
 /** `<dir>/host.ts` — core's `TaskHost`, which owns each A2A task. */
 export const hostTs = (n: AgentNames): string => {

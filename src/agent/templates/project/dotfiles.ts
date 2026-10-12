@@ -10,8 +10,8 @@
  * generated AGENTS.md instead. The toolchain these are written against is
  * pinned in `src/train.ts`.
  */
-import { NODE_VERSION } from "../../../train.js";
-import { jsonFile } from "../text.js";
+import { NODE_VERSION } from "../../../train";
+import { jsonFile } from "../text";
 
 /**
  * `tsconfig.json` — the Worker's own sources.

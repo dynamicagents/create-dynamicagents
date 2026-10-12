@@ -1,4 +1,4 @@
-import type { AgentNames, AgentSpec } from "../../spec.js";
+import type { AgentNames, AgentSpec } from "../../spec";
 
 /** `<dir>/agent.ts` — core's `StepAgent`: what this agent actually is. */
 export function agentTs(spec: AgentSpec, n: AgentNames): string {

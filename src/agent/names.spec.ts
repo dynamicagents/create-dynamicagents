@@ -1,7 +1,7 @@
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { type GeneratedFile, projectFiles } from "./files.js";
-import { specs } from "./fixtures.js";
+import { type GeneratedFile, projectFiles } from "./files";
+import { specs } from "./fixtures";
 import {
   COLLIDES,
   displayName,
@@ -11,7 +11,7 @@ import {
   TENANT_RE,
   validateModelId,
   validateTenant
-} from "./names.js";
+} from "./names";
 
 /**
  * The tenant id is the one answer everything else is derived from — the

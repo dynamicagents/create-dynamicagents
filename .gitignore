@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# esbuild's record of what went into the bundle, which the publish gate reads.
+build-meta.json
 *.tsbuildinfo
 *.tgz
 .DS_Store

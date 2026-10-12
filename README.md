@@ -17,6 +17,9 @@ Requires Node 24 or later, and a **paid Cloudflare Workers plan**: the models a
 generated agent runs on are not served on the free tier, and neither is Browser
 Rendering. There is no free-tier path.
 
+The CLI itself has no dependencies: `npm create` downloads one package, runs it,
+and the only install it then does is the one for the project it wrote.
+
 ## What you get
 
 ```

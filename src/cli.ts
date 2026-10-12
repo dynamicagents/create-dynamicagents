@@ -20,16 +20,16 @@ import {
   BLUEPRINTS,
   blueprintOf,
   type Blueprint
-} from "./agent/offer/blueprints.js";
-import { CAPABILITIES } from "./agent/offer/capabilities.js";
-import { displayName, validateModelId, validateTenant } from "./agent/names.js";
-import type { AgentSpec, Capability } from "./agent/spec.js";
-import { installProject } from "./cli/install.js";
-import { KINDS, kindOf, type Kind } from "./cli/kinds.js";
-import * as say from "./cli/messages.js";
-import { plan, type Target, type TargetState } from "./cli/plan.js";
-import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train.js";
-import { writeProject } from "./cli/write.js";
+} from "./agent/offer/blueprints";
+import { CAPABILITIES } from "./agent/offer/capabilities";
+import { displayName, validateModelId, validateTenant } from "./agent/names";
+import type { AgentSpec, Capability } from "./agent/spec";
+import { installProject } from "./cli/install";
+import { KINDS, kindOf, type Kind } from "./cli/kinds";
+import * as say from "./cli/messages";
+import { plan, type Target, type TargetState } from "./cli/plan";
+import { COMPATIBILITY_DATE, DEFAULT_MODEL_ID } from "./train";
+import { writeProject } from "./cli/write";
 
 /**
  * The bin: it reads its arguments, asks, writes, installs and prints. Every

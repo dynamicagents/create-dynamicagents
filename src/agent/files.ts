@@ -12,18 +12,18 @@
  * per generated file. Every spec in this directory is a spec on what
  * `projectFiles` returns, which is why they sit beside it.
  */
-import { names } from "./names.js";
-import type { AgentSpec } from "./spec.js";
-import { agentTs } from "./templates/agent/agent.js";
-import { childrenTs } from "./templates/agent/children.js";
-import { definitionTs } from "./templates/agent/definition.js";
-import { hostTs } from "./templates/agent/host.js";
-import { manifestTs } from "./templates/agent/manifest.js";
-import { pluginsTs } from "./templates/agent/plugins.js";
-import { soulTs } from "./templates/agent/soul.js";
-import { tuningTs } from "./templates/agent/tuning.js";
-import { workflowTs } from "./templates/agent/workflow.js";
-import { agentsMd } from "./templates/project/agents-md.js";
+import { names } from "./names";
+import type { AgentSpec } from "./spec";
+import { agentTs } from "./templates/agent/agent";
+import { childrenTs } from "./templates/agent/children";
+import { definitionTs } from "./templates/agent/definition";
+import { hostTs } from "./templates/agent/host";
+import { manifestTs } from "./templates/agent/manifest";
+import { pluginsTs } from "./templates/agent/plugins";
+import { soulTs } from "./templates/agent/soul";
+import { tuningTs } from "./templates/agent/tuning";
+import { workflowTs } from "./templates/agent/workflow";
+import { agentsMd } from "./templates/project/agents-md";
 import {
   eslintConfigJs,
   gitignore,
@@ -32,24 +32,24 @@ import {
   prettierrc,
   testTsconfigJson,
   tsconfigJson
-} from "./templates/project/dotfiles.js";
-import { envExample } from "./templates/project/env-example.js";
-import { hostManifestTs } from "./templates/project/host-manifest.js";
-import { packageJson } from "./templates/project/package-json.js";
-import { readmeMd } from "./templates/project/readme.js";
-import { copyTs, modelTs } from "./templates/project/shared.js";
-import { vitestConfigTs } from "./templates/project/vitest-config.js";
-import { indexTs } from "./templates/project/worker-index.js";
-import { wranglerJsonc } from "./templates/project/wrangler.js";
-import { edgeSpec } from "./templates/test/edge-spec.js";
-import { testWorkerTs } from "./templates/test/test-worker.js";
-import { turnSpec } from "./templates/test/turn-spec.js";
+} from "./templates/project/dotfiles";
+import { envExample } from "./templates/project/env-example";
+import { hostManifestTs } from "./templates/project/host-manifest";
+import { packageJson } from "./templates/project/package-json";
+import { readmeMd } from "./templates/project/readme";
+import { copyTs, modelTs } from "./templates/project/shared";
+import { vitestConfigTs } from "./templates/project/vitest-config";
+import { indexTs } from "./templates/project/worker-index";
+import { wranglerJsonc } from "./templates/project/wrangler";
+import { edgeSpec } from "./templates/test/edge-spec";
+import { testWorkerTs } from "./templates/test/test-worker";
+import { turnSpec } from "./templates/test/turn-spec";
 import {
   manifestSpec,
   pluginsSpec,
   soulSpec,
   tuningSpec
-} from "./templates/test/unit-specs.js";
+} from "./templates/test/unit-specs";
 
 /** One file to write, its path relative to the project root. */
 export interface GeneratedFile {

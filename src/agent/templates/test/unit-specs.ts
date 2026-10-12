@@ -1,6 +1,6 @@
-import type { AgentSpec } from "../../spec.js";
-import { MODEL_ID_RE } from "../../names.js";
-import { namedFrom } from "../text.js";
+import type { AgentSpec } from "../../spec";
+import { MODEL_ID_RE } from "../../names";
+import { namedFrom } from "../text";
 
 /**
  * The specs over the agent's own data: its soul, its card, its numbers and its

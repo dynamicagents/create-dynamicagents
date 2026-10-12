@@ -6,17 +6,17 @@
  * not. The CLI reads the filesystem and does the writing; everything judged
  * here, a spec can reach with no process at all.
  */
-import { projectFiles, type GeneratedFile } from "../agent/files.js";
-import { blueprintOf } from "../agent/offer/blueprints.js";
-import { validateModelId, validateTenant } from "../agent/names.js";
-import type { AgentSpec } from "../agent/spec.js";
+import { projectFiles, type GeneratedFile } from "../agent/files";
+import { blueprintOf } from "../agent/offer/blueprints";
+import { validateModelId, validateTenant } from "../agent/names";
+import type { AgentSpec } from "../agent/spec";
 import {
   describeOneLine,
   describeTooLong,
   noDescription,
   notEmpty,
   unknownBlueprint
-} from "./messages.js";
+} from "./messages";
 
 /** The longest one-line description worth putting on an agent card. */
 export const DESCRIPTION_MAX = 200;

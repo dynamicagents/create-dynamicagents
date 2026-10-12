@@ -1,5 +1,5 @@
-import type { AgentSpec } from "../../spec.js";
-import { line } from "../text.js";
+import type { AgentSpec } from "../../spec";
+import { line } from "../text";
 
 /**
  * `<dir>/soul.ts` — who the agent is.

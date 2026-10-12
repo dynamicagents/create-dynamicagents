@@ -1,5 +1,5 @@
-import type { AgentNames } from "../../spec.js";
-import { assigned } from "../text.js";
+import type { AgentNames } from "../../spec";
+import { assigned } from "../text";
 
 /** `<dir>/workflow.ts` — core's `TaskWorkflow`: the task as steps. */
 export const workflowTs = (n: AgentNames): string => {

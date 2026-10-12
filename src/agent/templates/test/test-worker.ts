@@ -1,5 +1,5 @@
-import type { AgentNames, AgentSpec } from "../../spec.js";
-import { assigned, namedFrom } from "../text.js";
+import type { AgentNames, AgentSpec } from "../../spec";
+import { assigned, namedFrom } from "../text";
 
 /**
  * `test/worker.ts` — the Worker the suite runs.

@@ -1,4 +1,4 @@
-import type { AgentSpec } from "../../spec.js";
+import type { AgentSpec } from "../../spec";
 
 /** `.env.example` — the two secrets, and why there is no third. */
 export const envExample = (

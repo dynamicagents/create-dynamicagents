@@ -7,13 +7,35 @@ bin name are the command: renaming either breaks it.
 It runs on a user's machine before anything of theirs is installed, and that
 sets the rules:
 
-- **Only `dependencies` reach the user.** `npm create` installs the package
-  without its devDependencies, so importing one works here and throws
-  `ERR_MODULE_NOT_FOUND` there. `scripts/verify-package.mjs` fails the build on
-  it.
-- **A Node program, not a Worker.** Unlike the rest of the train it builds with
-  `module: NodeNext` and `types: ["node"]`. `engines` and `@types/node` follow
-  starter's Node, since what this scaffolds needs that Node anyway.
+- **Nothing reaches the user but the bundle.** `npm run build` is esbuild:
+  `src/cli.ts` and everything it imports — `@clack/prompts` included — become
+  the one file `dist/cli.js`, and `package.json` declares no `dependencies` at
+  all, so `npm create` downloads this package and stops. The packages compiled
+  in are listed as `BUNDLED` in `scripts/verify-package.mjs`, and adding a line
+  there is a decision to ship somebody else's code.
+
+  Bundling **inverts** the old mistake rather than retiring it. Importing a
+  devDependency from shipped code used to throw `ERR_MODULE_NOT_FOUND` on the
+  user's machine; now esbuild quietly compiles it in and the user gets it. So
+  the gate reads the source, not only `dist`, and that check is the load-bearing
+  one — see the header of `scripts/verify-package.mjs` for all five.
+
+  "Bundle" means two unrelated things in this repo, and they never meet: this
+  one, and wrangler bundling a _generated_ Worker — which is what `src/train.ts`
+  is talking about when it says `agents` must never be bundled.
+
+- **A Node program, not a Worker.** `tsc` only typechecks here (`noEmit`), and
+  what still sets this package apart from the rest of the train is
+  `types: ["node"]` with `engines` and `@types/node` following starter's Node,
+  since what this scaffolds needs that Node anyway. The module settings are the
+  train's own — `module: ESNext`, `moduleResolution: Bundler` — because nothing
+  resolves a specifier in this repo at run time: `dist` is one bundle, so
+  esbuild is the only resolver in the path.
+
+  So **relative imports name a file without its extension**, like the projects
+  this writes and unlike core, which publishes modules Node resolves itself. The
+  gate fails an extension; nothing else would, since esbuild takes either.
+
 - **Logic stays out of `src/cli.ts`.** The bin only reads its arguments, asks,
   and prints; what it asks and prints comes from pure functions and data a
   spec can reach without a process. `src/cli/` is where those live — one run of
@@ -63,14 +85,16 @@ Two rules follow, and breaking either is invisible until somebody's first run:
 ## Working here
 
 ```bash
-npm run check              # prettier, eslint, tsc, build
+npm run check              # prettier, eslint, tsc (typecheck only), esbuild
 npm test                   # vitest
 npm run verify:package     # the publish gate — read it before changing it
 node dist/cli.js           # after a build, what a user sees
 ```
 
 `npm test` alone will not catch a type error; vitest transpiles specs without
-typechecking them.
+typechecking them. `npm run build` is the bundle and nothing else — it is
+`scripts/build.mjs`, it takes about 50 ms, and it writes `build-meta.json`
+beside `dist` for the gate to read.
 
 None of those installs anything, so none of them proves a generated project
 works. That is one command, and worth running after a change to a template:

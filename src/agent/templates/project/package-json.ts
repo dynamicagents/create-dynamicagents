@@ -1,7 +1,7 @@
-import { NODE_ENGINE } from "../../../train.js";
-import { dependenciesFor, devDependenciesFor } from "../dependencies.js";
-import type { AgentSpec } from "../../spec.js";
-import { jsonFile } from "../text.js";
+import { NODE_ENGINE } from "../../../train";
+import { dependenciesFor, devDependenciesFor } from "../dependencies";
+import type { AgentSpec } from "../../spec";
+import { jsonFile } from "../text";
 
 /**
  * `package.json`.

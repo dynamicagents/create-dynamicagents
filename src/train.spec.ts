@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NODE_ENGINE, NODE_VERSION, TOOLCHAIN } from "./train.js";
+import { NODE_ENGINE, NODE_VERSION, TOOLCHAIN } from "./train";
 
 /**
  * The pins themselves are npm's to judge — `npm install` in a generated project

@@ -1,4 +1,4 @@
-import type { AgentNames, AgentSpec } from "../../spec.js";
+import type { AgentNames, AgentSpec } from "../../spec";
 
 /** `vitest.config.ts` — one pool, in the real Workers runtime. */
 export function vitestConfigTs(spec: AgentSpec, n: AgentNames): string {

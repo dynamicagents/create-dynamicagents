@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { projectFiles } from "./files.js";
-import { specs, variants } from "./fixtures.js";
-import { names } from "./names.js";
+import { projectFiles } from "./files";
+import { specs, variants } from "./fixtures";
+import { names } from "./names";
 
 /**
  * The generated `wrangler.jsonc`, read as configuration rather than as text.

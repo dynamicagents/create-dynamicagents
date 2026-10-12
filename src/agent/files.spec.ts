@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { projectFiles, type GeneratedFile } from "./files.js";
-import { specs, variants } from "./fixtures.js";
-import { names } from "./names.js";
+import { projectFiles, type GeneratedFile } from "./files";
+import { specs, variants } from "./fixtures";
+import { names } from "./names";
 
 /**
  * What a generated project consists of, and the wiring that has to agree with

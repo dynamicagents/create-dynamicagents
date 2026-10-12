@@ -1,10 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2024",
-    // A Node program, unlike the rest of the train: NodeNext makes tsc refuse a
-    // relative import without its `.js`, which Node ESM would throw on.
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    // The pair core, plugins and every generated project use, and for the same
+    // reason: nothing at run time resolves a specifier in this repo. `dist` is
+    // one bundle, so esbuild is the only resolver in the path and relative
+    // imports name a file without its extension. NodeNext stood here while
+    // `dist` was 38 modules Node loaded itself; it cannot stand beside an
+    // extensionless import, which it exists to refuse.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "lib": ["ES2024"],
     // `@types/node` tracks `engines`, so an API newer than the oldest Node a
     // user may run fails here rather than on their machine.
@@ -15,8 +19,13 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true
   },
-  // Specs included: eslint's type-aware pass resolves each file to its
-  // *nearest* tsconfig, so a co-located spec excluded here has no project at
-  // all and fails to parse. `tsconfig.build.json` holds them out of `dist`.
+  // Specs included, and nothing excluded: this project only typechecks —
+  // `noEmit` above, and `npm run build` is esbuild — so there is no second
+  // project to keep specs out of `dist`. A bundle rooted at `src/cli.ts`
+  // cannot reach one: nothing it imports imports a spec.
+  //
+  // eslint needs them here besides. Its type-aware pass resolves each file to
+  // its *nearest* tsconfig, so a co-located spec left out would have no
+  // project at all and fail to parse.
   "include": ["src/**/*.ts"]
 }

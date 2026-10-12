@@ -1,4 +1,4 @@
-import type { AgentSpec } from "../../spec.js";
+import type { AgentSpec } from "../../spec";
 
 /**
  * `test/turn.spec.ts` — the whole A2A lifecycle on a scripted model.
