@@ -43,6 +43,13 @@ sets the rules:
   which is only ever about the project being written. `src/train.ts` is at the
   root with the bin because both halves read it.
 
+  One spec is the exception, and has to be: `src/cli.spec.ts` spawns
+  `dist/cli.js` and asserts exit codes and what reaches stdout, because an exit
+  code and a stream are what it is about and no pure function has either. It
+  builds when `dist/` is missing or older than `src/`, so `npm test` alone still
+  works. Everything else stays under the rule — a spec that wants a process to
+  tell it about a _string_ is a spec in the wrong place.
+
 ---
 
 ## What it writes, and why that is pinned
@@ -79,6 +86,11 @@ Two rules follow, and breaking either is invisible until somebody's first run:
   `wrangler.jsonc`, the skill on the card. Core checks a plugin's `requires`
   when the agent starts, so two out of three is an agent that throws on its
   first request.
+- **A flag arrives whole** too, on this side of the line — the entry in
+  `src/cli/args.ts`'s `OPTIONS`, the line in `src/cli/messages.ts`'s `FLAGS`,
+  the row in `README.md`. One without the others is a flag that works and
+  nothing documents, or one documented and refused; `messages.spec.ts` holds the
+  three together.
 
 ---
 
@@ -92,9 +104,11 @@ node dist/cli.js           # after a build, what a user sees
 ```
 
 `npm test` alone will not catch a type error; vitest transpiles specs without
-typechecking them. `npm run build` is the bundle and nothing else — it is
-`scripts/build.mjs`, it takes about 50 ms, and it writes `build-meta.json`
-beside `dist` for the gate to read.
+typechecking them. It does build, though, when `src/cli.spec.ts` finds `dist/`
+missing or behind `src/` — that spec runs the real bin, so there is nothing for
+it to assert against otherwise. What it runs is `scripts/build.mjs` and nothing
+else: one esbuild call, about 50 ms, writing `dist/cli.js` and the
+`build-meta.json` beside it that the gate reads.
 
 None of those installs anything, so none of them proves a generated project
 works. That is one command, and worth running after a change to a template:
