@@ -143,10 +143,6 @@ export function jsonObject(
 export const jsonFile = (value: unknown): string =>
   `${JSON.stringify(value, null, 2)}\n`;
 
-/** One line of prose as an array element: `  "…"`. Joined with `",\n"`. */
-export const line = (text: string, indent = 2): string =>
-  `${" ".repeat(indent)}${quoted(text)}`;
-
 /**
  * A markdown table, with the column padding prettier applies.
  *

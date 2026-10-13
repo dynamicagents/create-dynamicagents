@@ -54,11 +54,21 @@ export function wranglerJsonc(spec: AgentSpec, n: AgentNames): string {
       // `jsonArrayProp` one element per line once the line passes the print
       // width, and `../../formatting.spec.ts` sweeps tenant ids across it.
       DO_BINDINGS: bindings,
-      NEW_SQLITE_CLASSES: jsonArrayProp(
-        "new_sqlite_classes",
-        [n.hostClass, n.agentClass, "Artifacts"],
-        6
-      )
+      /**
+       * The tag is static, and is in here anyway: a `$block` cannot stand
+       * where the property before it would need a trailing comma, because
+       * `trailingComma: "none"` has prettier strip a comma before what it
+       * reads as the last property — and a comment is not one. So the block is
+       * the whole migration rather than its second line.
+       */
+      MIGRATION_V1: [
+        '      "tag": "v1"',
+        jsonArrayProp(
+          "new_sqlite_classes",
+          [n.hostClass, n.agentClass, "Artifacts"],
+          6
+        )
+      ].join(",\n")
     }
   });
 }

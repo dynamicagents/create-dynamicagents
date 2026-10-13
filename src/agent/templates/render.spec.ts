@@ -189,3 +189,72 @@ describe("regions", () => {
     expect(render(prose)).toBe(prose);
   });
 });
+
+describe("blocks", () => {
+  it("replaces the whole marker line with the token's text", () => {
+    const source = [
+      "export class A extends B<Env> {",
+      "  protected readonly copy = copy;",
+      "  // $block FIELDS",
+      "}"
+    ].join("\n");
+    expect(
+      render(source, {
+        tokens: { FIELDS: '  readonly a = "x";\n  readonly b = "y";' }
+      })
+    ).toBe(
+      'export class A extends B<Env> {\n  protected readonly copy = copy;\n  readonly a = "x";\n  readonly b = "y";\n}'
+    );
+  });
+
+  it("takes its indentation from the block, not from the marker", () => {
+    // The marker is indented so that prettier leaves the template alone; what
+    // reaches the output is indented by the helper that laid the block out.
+    expect(render("        // $block B", { tokens: { B: "  two" } })).toBe(
+      "  two"
+    );
+  });
+
+  it("never rescans the text it inserted", () => {
+    expect(render("// $block B", { tokens: { B: "$NOT_A_TOKEN" } })).toBe(
+      "$NOT_A_TOKEN"
+    );
+  });
+
+  it("goes with the region it is in", () => {
+    const source = ["// $when flag", "// $block B", "// $end"].join("\n");
+    expect(render(source, { when: { flag: false }, tokens: { B: "x" } })).toBe(
+      ""
+    );
+    expect(render(source, { when: { flag: true }, tokens: { B: "x" } })).toBe(
+      "x"
+    );
+  });
+
+  it("counts as reading its token, so the binding is not called dead", () => {
+    expect(render("// $block B", { tokens: { B: "x" } })).toBe("x");
+  });
+
+  it("refuses a block it was given nothing for", () => {
+    expect(() => render("// $block B")).toThrow('"$block B" is not bound');
+  });
+
+  it("refuses a block with no name", () => {
+    expect(() => render("// $block")).toThrow('"$block" names no token');
+  });
+
+  it("refuses a negated block — the `!` form is `$when`'s alone", () => {
+    // Caught a step earlier than the marker itself, by the guard on a binding
+    // nothing reads: `$block !B` names no token, so there is no `B` in the
+    // template for the `B` the module passed.
+    expect(() => render("// $block !B", { tokens: { B: "x" } })).toThrow(
+      'nothing in this template reads "$B"'
+    );
+    expect(() => render("// $block !B")).toThrow('"$block" names no token');
+  });
+
+  it("leaves a comment that merely mentions a block alone", () => {
+    const prose = "// A computed piece is written `// $block NAME`.";
+    expect(render(prose)).toBe(prose);
+  });
+});

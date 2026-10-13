@@ -88,7 +88,7 @@
   // object it reaches cannot be keyed by task.
   "durable_objects": {
     "bindings": [
-$DO_BINDINGS
+      // $block DO_BINDINGS
     ]
   },
 
@@ -104,8 +104,7 @@ $DO_BINDINGS
   // irreversible.
   "migrations": [
     {
-      "tag": "v1",
-$NEW_SQLITE_CLASSES
+      // $block MIGRATION_V1
     }
   ],
 
