@@ -27,17 +27,27 @@ describe.each(variants())("$label", ({ spec }) => {
   const n = names(spec.tenant);
   const paths = files.map((file) => file.path);
 
-  it("writes a complete project", () => {
-    for (const path of [
+  it("writes a complete project, and exactly this one", () => {
+    // **Exhaustive, not a sample.** A `toContain` over the paths somebody
+    // thought to list is silent about the opposite failure — a file that stops
+    // being written — and `.nvmrc` or `test/plugins.spec.ts` quietly going
+    // missing is a project that fails its own first `npm run check`.
+    //
+    // In `./files.ts`'s order, which that file documents as the order a reader
+    // meets the project in, so a reordering is worth seeing in a diff too.
+    expect(paths).toEqual([
       "package.json",
       "wrangler.jsonc",
       "tsconfig.json",
       "vitest.config.ts",
       "eslint.config.js",
+      ".prettierrc",
+      ".prettierignore",
+      ".gitignore",
+      ".nvmrc",
+      ".env.example",
       "README.md",
       "AGENTS.md",
-      ".env.example",
-      ".gitignore",
       "src/index.ts",
       "src/host-manifest.ts",
       "src/copy.ts",
@@ -46,16 +56,20 @@ describe.each(variants())("$label", ({ spec }) => {
       `${n.dir}/host.ts`,
       `${n.dir}/workflow.ts`,
       `${n.dir}/agent.ts`,
+      ...(spec.subAgent ? [`${n.dir}/children.ts`] : []),
       `${n.dir}/manifest.ts`,
       `${n.dir}/plugins.ts`,
       `${n.dir}/soul.ts`,
       `${n.dir}/tuning.ts`,
+      "test/tsconfig.json",
       "test/worker.ts",
       "test/turn.spec.ts",
-      "test/edge.spec.ts"
-    ]) {
-      expect(paths, path).toContain(path);
-    }
+      "test/edge.spec.ts",
+      "test/soul.spec.ts",
+      "test/manifest.spec.ts",
+      "test/tuning.spec.ts",
+      "test/plugins.spec.ts"
+    ]);
   });
 
   it("writes one file per path, and nothing empty", () => {
@@ -67,6 +81,25 @@ describe.each(variants())("$label", ({ spec }) => {
     for (const file of files) {
       expect(file.contents.endsWith("\n"), file.path).toBe(true);
       expect(file.contents.endsWith("\n\n"), file.path).toBe(false);
+    }
+  });
+
+  it("never writes two consecutive blank lines", () => {
+    // The invariant `./templates/render.ts`'s regions depend on: the blank
+    // line separating a region from its neighbour belongs *inside* it, so
+    // dropping the region leaves exactly one. Nothing normalises blank lines,
+    // which is what makes a misplaced marker a failure rather than a reformat.
+    //
+    // **Mostly a second opinion, and deliberately so.** Prettier collapses a
+    // double blank line, so `./formatting.spec.ts` already catches this for 29
+    // of the 33 files and says more about it — it prints the diff. What is only
+    // here is the four prettier has no parser for and therefore skips:
+    // `.gitignore`, `.prettierignore`, `.nvmrc` and `.env.example`. Stated over
+    // everything rather than over those four by name, because asking prettier
+    // which files it skips would couple this spec to that one, and a list of
+    // four goes stale the next time a file arrives without an extension.
+    for (const file of files) {
+      expect(file.contents, file.path).not.toContain("\n\n\n");
     }
   });
 
