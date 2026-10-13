@@ -1,5 +1,7 @@
 import type { AgentSpec } from "../../spec";
+import { render } from "../render";
 import { quoted, stringProp } from "../text";
+import source from "./manifest.ts.tpl";
 
 interface Skill {
   id: string;
@@ -32,12 +34,13 @@ const BROWSE: Skill = {
   tags: ["web", "browser"]
 };
 
-const render = (skill: Skill): string => {
+/** One skill as an element of the card's `skills`, laid out as prettier would. */
+const skill = (it: Skill): string => {
   const props = [
-    stringProp("id", skill.id, 6),
-    stringProp("name", skill.name, 6),
-    stringProp("description", skill.description, 6),
-    `      tags: [${skill.tags.map(quoted).join(", ")}]`,
+    stringProp("id", it.id, 6),
+    stringProp("name", it.name, 6),
+    stringProp("description", it.description, 6),
+    `      tags: [${it.tags.map(quoted).join(", ")}]`,
     "      examples: []",
     "      inputModes: []",
     "      outputModes: []",
@@ -50,7 +53,10 @@ const render = (skill: Skill): string => {
  * `<dir>/manifest.ts` — the agent card.
  *
  * Its skills are the installed capabilities and nothing else: a card
- * advertising what the agent cannot do is worse than a short card.
+ * advertising what the agent cannot do is worse than a short card. That makes
+ * `skills` the one list here whose *number of elements* is computed, so it
+ * stays composed and arrives as a block — and the card's name and description
+ * are a block too, because a long description breaks after the colon.
  */
 export function manifestTs(spec: AgentSpec): string {
   const skills = [
@@ -58,39 +64,20 @@ export function manifestTs(spec: AgentSpec): string {
     ...(spec.subAgent ? [DELEGATE] : []),
     ...(spec.capabilities.includes("browser") ? [BROWSE] : [])
   ];
-  const props = [
-    stringProp("name", spec.name),
-    stringProp("description", spec.description),
-    '  version: "0.1.0"',
-    `  // \`extensions\` is a required (repeated) protobuf field in v1.0, and this
-  // agent declares no protocol extensions, so it stays empty.
-  capabilities: { streaming: false, pushNotifications: true, extensions: [] }`,
-    '  defaultInputModes: ["text/plain"]',
-    '  defaultOutputModes: ["text/plain"]',
-    `  skills: [\n${skills.map(render).join(",\n")}\n  ]`
-  ];
 
-  return `import type { AgentManifest } from "@dynamicagents/core/a2a";
-
-/**
- * The transport-independent half of this agent's AgentCard — everything that
- * does not depend on the request origin. Core adds \`supportedInterfaces\` (the
- * deployment's \`/a2a\` url, tagged with this agent's tenant id) and the security
- * scheme. It is served through \`GetExtendedAgentCard\`, since the well-known
- * path carries the deployment's stub card — \`src/host-manifest.ts\`.
- *
- * \`AgentManifest\` is core's, derived from the A2A SDK's \`AgentCard\` rather than
- * hand-declared, so a protocol field that gains a requirement fails the build
- * here instead of silently going unadvertised.
- *
- * **The skills are what this agent has.** Adding a capability in
- * \`./plugins.ts\`, or a sub-agent in \`./children.ts\`, means a skill here;
- * removing one means removing it. Each skill's \`inputModes\`, \`outputModes\` and
- * \`securityRequirements\` are empty, which means "inherit the card's" — the
- * default modes below, and the gatekeeper JWT.
- */
-export const manifest: AgentManifest = {
-${props.join(",\n")}
-};
-`;
+  return render(source, {
+    tokens: {
+      /**
+       * Trailing comma included, and it has to be: a block owns the separators
+       * on its own boundaries, because `trailingComma: "none"` has prettier
+       * strip a comma before what it reads as the last property, and a comment
+       * marker is not a property it can read.
+       */
+      CARD_IDENTITY: `${[
+        stringProp("name", spec.name),
+        stringProp("description", spec.description)
+      ].join(",\n")},`,
+      SKILLS: skills.map(skill).join(",\n")
+    }
+  });
 }

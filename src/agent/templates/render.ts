@@ -79,7 +79,20 @@ export interface Bindings {
 const MARKER =
   /^(?:\/\/|#|\*)\s*\$(when|end|block)\b(?:\s+(!?)([A-Za-z]\w*))?\s*$/;
 
-/** An inline token: `$` and an UPPER_SNAKE name, longest run first. */
+/**
+ * An inline token: `$` and an UPPER_SNAKE name, longest run first.
+ *
+ * Longest-run is what keeps `$MODELS_URL` from being read as `$MODEL`, and it
+ * is also the one rule a template has to respect: **a token may not be followed
+ * immediately by an uppercase letter**, because the run would swallow it.
+ * `Test$PASCALWorkflow` reads as the token `PASCALW`, which is why
+ * `vitest.config.ts.tpl` binds a whole `$TEST_WORKFLOW_CLASS` instead. Getting
+ * it wrong is loud — the swallowed name is bound to nothing and rendering
+ * throws — rather than a project with a mangled class name in it.
+ *
+ * Lowercase and `${…}` are left alone, which is what lets a template hold the
+ * generated project's own interpolations and `wrangler.jsonc`'s `"$schema"`.
+ */
 const TOKEN = /\$[A-Z][A-Z0-9_]*/g;
 
 /**
