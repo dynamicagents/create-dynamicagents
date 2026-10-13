@@ -13,8 +13,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "$TENANT",
   "main": "src/index.ts",
+  // The date is the runtime: a workerd version *is* a release date, and this is
+  // the one `src/train.ts`'s pinned wrangler installs. No `compatibility_flags`
+  // beside it, and that is the date's doing — `nodejs_compat` is on by default
+  // from 2026-08-04, so declaring it here would say nothing this date does not
+  // already say.
   "compatibility_date": "$COMPATIBILITY_DATE",
-  "compatibility_flags": ["nodejs_compat"],
 
   // **One origin, and keep it.**
   //

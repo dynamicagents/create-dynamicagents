@@ -5,7 +5,9 @@ import {
   DEFAULT_MODEL_ID,
   NODE_ENGINE,
   NODE_VERSION,
-  TOOLCHAIN
+  TOOLCHAIN,
+  WORKERD,
+  compatibilityDateOf
 } from "./train";
 
 /**
@@ -29,16 +31,35 @@ describe("the Node a generated project asks for", () => {
 
 describe("the compatibility date", () => {
   /**
-   * Adopted from create-cloudflare's `compatibility-date.test.ts`. The date is
-   * honoured by workerd, whose version is the date — and workerd is installed
-   * nowhere a spec here can read it: not a dependency of this package, and only
-   * a transitive of the `wrangler` a generated project pins. So what is checked
-   * here is the half that needs no runtime, and `.github/workflows/scaffold.yml`
-   * is where the real pairing is proven: it installs a generated project and
-   * runs its suite, which boots real workerd on this very date.
+   * Adopted from create-cloudflare's `compatibility-date.test.ts`, and now
+   * about a derivation rather than a literal: the date is {@link WORKERD}'s
+   * release date, because a compatibility date is only honoured by the workerd
+   * that reads it.
+   *
+   * workerd is installed nowhere a spec here can read it — not a dependency of
+   * this package, and only a transitive of the `wrangler` a generated project
+   * pins — so what is checked here is the half that needs no runtime: that the
+   * derivation is right and the pin is sane. The other half, whether this date
+   * has fallen behind the workerd a real install produces, is
+   * `.github/workflows/scaffold.yml`'s, which can read the installed version.
    */
+  it("is the release date inside the pinned workerd", () => {
+    expect(compatibilityDateOf("1.20260911.1")).toBe("2026-09-11");
+    expect(COMPATIBILITY_DATE).toBe(compatibilityDateOf(WORKERD));
+  });
+
+  it("refuses anything that is not a workerd version", () => {
+    // A wrong date is a generated project that does not start, so this throws
+    // rather than returning something plausible.
+    for (const bad of ["1.2026091.1", "2026-09-11", "1.20260911", "", "x"]) {
+      expect(() => compatibilityDateOf(bad), bad).toThrow("not a workerd");
+    }
+  });
+
   it("is a date wrangler can read", () => {
-    // `2026-7-6` is refused by wrangler, and `2026-02-30` is not a day.
+    // `2026-9-11` is refused by wrangler, and `2026-02-30` is not a day — the
+    // second of which the derivation cannot catch, since it only reads digits
+    // out of a version string.
     expect(COMPATIBILITY_DATE).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(
       new Date(`${COMPATIBILITY_DATE}T00:00:00Z`).toISOString().slice(0, 10)
@@ -49,10 +70,19 @@ describe("the compatibility date", () => {
     // A date newer than the installed runtime knows about is a hard error, not
     // a warning — so the one thing a clock can tell us is worth asserting. ISO
     // dates compare lexicographically, and a date in the past stays in the
-    // past: this fails only when somebody writes a future one.
+    // past: this fails only when somebody pins an unreleased workerd.
     expect(COMPATIBILITY_DATE <= new Date().toISOString().slice(0, 10)).toBe(
       true
     );
+  });
+
+  it("is past the date that made nodejs_compat the default", () => {
+    // What lets `wrangler.jsonc` carry no `compatibility_flags` at all.
+    // workerd's own constant, read out of the wrangler this CLI pins:
+    // `NODEJS_COMPAT_DEFAULT_ON_DATE = "2026-08-04"`. A pin older than that
+    // would need the flag back, and `agent/wrangler.spec.ts` asserts it is
+    // gone — so this is the spec that says why that is safe.
+    expect(COMPATIBILITY_DATE >= "2026-08-04").toBe(true);
   });
 });
 

@@ -74,6 +74,19 @@ jobs:
             github:dynamicagents/plugins
           npx wrangler types
 
+      # The other half of pinning a compatibility date, and the half this
+      # repository was missing. `scripts/check-compat-date.mjs` carries the
+      # reasoning and the threshold; what belongs here is why it can only run
+      # here.
+      #
+      # workerd is not a dependency of this package — it arrives as a transitive
+      # of the `wrangler` a *generated* project pins — so no local `npm test`
+      # can read the installed runtime. The install above is the one place the
+      # date a user receives and the runtime a user's install produces are both
+      # on disk. Adopted from create-cloudflare's `check:compat-date`.
+      - name: The date against the runtime it was pinned from
+        run: node scripts/check-compat-date.mjs "$RUNNER_TEMP/support"
+
       # The generated project's own checks, run as its own README tells a dev to
       # run them. `check` begins with `wrangler types --check`, so a scaffold
       # that wrote a `wrangler.jsonc` its own types do not match fails here.

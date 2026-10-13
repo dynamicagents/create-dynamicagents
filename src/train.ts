@@ -69,10 +69,51 @@ export const TOOLCHAIN = {
 } as const;
 
 /**
- * The Workers compatibility date, paired with {@link TOOLCHAIN}'s `wrangler`.
- * Moved with it, never ahead of it.
+ * The workerd that {@link TOOLCHAIN}'s `wrangler` floor depends on, exactly as
+ * npm resolves it: `npm view wrangler@4.131.2 dependencies.workerd`.
+ *
+ * Here instead of the compatibility date, because **the date is this version**.
+ * A workerd version *is* a release date, and a compatibility date is only ever
+ * honoured by the workerd that reads it — so the runtime is the fact and the
+ * date is derived from it, which makes the pairing mechanical rather than a
+ * thing to remember. Moving `wrangler` above means moving this line, and the
+ * date follows on its own.
+ *
+ * **Pinned, deliberately not derived at run time.** create-cloudflare does the
+ * same and for a reason worth copying: workerd refuses a compatibility date
+ * more than a few days past the runtime it is running on, so a date that
+ * chased the newest release would break every project installed against an
+ * older wrangler. What C3 pairs that pin with is a staleness check, which is
+ * the half this repository was missing — `.github/workflows/scaffold.yml` now
+ * reads the workerd a real install produced and fails when this has fallen too
+ * far behind it.
  */
-export const COMPATIBILITY_DATE = "2026-07-06";
+export const WORKERD = "1.20260911.1";
+
+/**
+ * The release date inside a workerd version: `1.20260911.1` → `2026-09-11`.
+ *
+ * Exported for the spec, which is the only thing that calls it with anything
+ * but {@link WORKERD}. Throws rather than returning a wrong date, because a
+ * silently malformed compatibility date is a generated project that does not
+ * start.
+ */
+export function compatibilityDateOf(workerd: string): string {
+  const stamp = /^\d+\.(\d{4})(\d{2})(\d{2})\.\d+$/.exec(workerd);
+  if (stamp === null) {
+    throw new Error(
+      `train: "${workerd}" is not a workerd version (1.YYYYMMDD.N)`
+    );
+  }
+  const [, year, month, day] = stamp;
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * The Workers compatibility date a generated project declares, which is
+ * {@link WORKERD}'s release date and nothing else.
+ */
+export const COMPATIBILITY_DATE = compatibilityDateOf(WORKERD);
 
 /** The Node a generated project requires, as `engines` spells it. */
 export const NODE_ENGINE = ">=24";
