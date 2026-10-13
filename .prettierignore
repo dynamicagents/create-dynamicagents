@@ -7,3 +7,19 @@ build-meta.json
 # AGENTS.md, which CLAUDE.md points at, is still checked.
 CLAUDE.md
 .claude/
+
+# The one template whose text is not in the language it writes.
+#
+# `.prettierrc` gives every `*.jsonc.tpl` the jsonc parser, and this is the one
+# file that cannot take it: `wrangler.jsonc`'s durable-object bindings and its
+# `new_sqlite_classes` both break past the print width on a long tenant id, so
+# both stay computed and arrive as block tokens — and `$DO_BINDINGS` standing
+# where a JSON array's elements go is not JSON, however correct the file it
+# renders. Named here rather than solved by dropping the rule, because the rule
+# is right for a `.jsonc.tpl` without one.
+#
+# Nothing is unchecked as a result. `src/agent/formatting.spec.ts` runs the real
+# prettier over the *rendered* `wrangler.jsonc` for every fixture and every
+# sweep across the print width, which is the check that was ever load-bearing;
+# what this file loses is format-on-save while editing it.
+src/agent/templates/project/wrangler.jsonc.tpl
