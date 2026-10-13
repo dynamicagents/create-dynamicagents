@@ -117,19 +117,41 @@ export function render(source: string, bindings: Bindings = {}): string {
   const tokens = bindings.tokens ?? {};
   const lines = source.split("\n");
 
-  const named = new Set<string>();
+  /**
+   * Exactly what this source names: the flags its regions read, and the tokens
+   * its inline occurrences and its blocks read.
+   *
+   * **Collected rather than matched.** Asking whether the source *contains*
+   * `"$NAME"` is wrong in both directions: a stale `DIR` looks read by a real
+   * `$DIRECTORY`, so a rename goes quiet — which is the one thing this check
+   * exists to stop — and a `// $block  NAME` with the second space `MARKER`
+   * allows looks unread, so a correct template is refused. The names are a
+   * parse, and the same walk that renders is what knows them.
+   */
+  const regionNames = new Set<string>();
+  const tokenNames = new Set<string>();
   for (const line of lines) {
     const marker = MARKER.exec(line.trim());
-    if (marker?.[1] === "when" && marker[3] !== undefined) named.add(marker[3]);
+    if (marker === null) {
+      for (const token of line.match(TOKEN) ?? [])
+        tokenNames.add(token.slice(1));
+      continue;
+    }
+    const [, directive, negated, name] = marker;
+    if (name === undefined) continue;
+    if (directive === "when") regionNames.add(name);
+    // A negated block names nothing: the `!` form is `$when`'s alone, and the
+    // render below is where that line is refused.
+    else if (directive === "block" && negated !== "!") tokenNames.add(name);
   }
+
   for (const name of Object.keys(when)) {
-    if (!named.has(name)) {
+    if (!regionNames.has(name)) {
       throw new Error(`render: no "$when ${name}" region in this template`);
     }
   }
   for (const name of Object.keys(tokens)) {
-    // `$NAME` inline, or `$block NAME` on a line of its own.
-    if (!source.includes(`$${name}`) && !source.includes(`$block ${name}`)) {
+    if (!tokenNames.has(name)) {
       throw new Error(`render: nothing in this template reads "$${name}"`);
     }
   }

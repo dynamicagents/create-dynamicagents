@@ -61,6 +61,24 @@ describe("tokens", () => {
       render(source, { when: { extra: false }, tokens: { WHO: "x" } })
     ).toBe("keep");
   });
+
+  it("refuses a stale binding whose name only prefixes a real token", () => {
+    // The case that makes the check a parse rather than a substring search.
+    // `$DIRECTORY` is one token by the longest-run rule, so a `DIR` left
+    // behind by a rename is read by nothing — and asking whether the source
+    // *contains* `"$DIR"` would have said otherwise and gone quiet.
+    expect(() =>
+      render("$DIRECTORY", { tokens: { DIRECTORY: "src", DIR: "stale" } })
+    ).toThrow('nothing in this template reads "$DIR"');
+  });
+
+  it("refuses a stale binding whose name only prefixes a block's", () => {
+    expect(() =>
+      render("// $block HOST_BINDINGS", {
+        tokens: { HOST_BINDINGS: "x", HOST: "stale" }
+      })
+    ).toThrow('nothing in this template reads "$HOST"');
+  });
 });
 
 describe("regions", () => {
@@ -233,6 +251,15 @@ describe("blocks", () => {
 
   it("counts as reading its token, so the binding is not called dead", () => {
     expect(render("// $block B", { tokens: { B: "x" } })).toBe("x");
+  });
+
+  it("counts as reading it with whatever spacing the marker allows", () => {
+    // `MARKER` takes any run of whitespace before the name, so the check on a
+    // binding nothing reads has to take it too — otherwise a legal template is
+    // refused for a token it does read.
+    for (const marker of ["// $block B", "//   $block   B", "#  $block B"]) {
+      expect(render(marker, { tokens: { B: "x" } })).toBe("x");
+    }
   });
 
   it("refuses a block it was given nothing for", () => {
