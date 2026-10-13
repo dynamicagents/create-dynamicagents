@@ -50,6 +50,14 @@ const result = await build({
   // file is read by people, and every string in it is either something the CLI
   // says or a line of a project it writes.
   charset: "utf8",
+  // `src/agent/templates/` carries each generated file as a real `.tpl` file —
+  // byte-for-byte what the user gets — and this is what puts them in the
+  // bundle, since `dist/cli.js` is the only thing shipped and there is nothing
+  // to read at run time. A `.tpl` with no loader is a *build error* ("No loader
+  // is configured"), never a silent inclusion, which is the whole reason the
+  // extension is its own rather than something esbuild already knows.
+  // `vitest.config.ts` states the same rule for the specs.
+  loader: { ".tpl": "text" },
   metafile: true,
   logLevel: "info"
 });

@@ -27,5 +27,10 @@
   // eslint needs them here besides. Its type-aware pass resolves each file to
   // its *nearest* tsconfig, so a co-located spec left out would have no
   // project at all and fail to parse.
-  "include": ["src/**/*.ts"]
+  //
+  // `vitest.config.ts` is named too, because it is the only source file outside
+  // `src/` and the `.tpl` loader it declares is load-bearing for every spec.
+  // The `.tpl` files themselves are not here and must not be: they are text,
+  // and `src/agent/templates/tpl.d.ts` is what says so.
+  "include": ["src/**/*.ts", "vitest.config.ts"]
 }

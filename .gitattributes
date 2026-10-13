@@ -1,0 +1,21 @@
+# `src/agent/templates/**/*.tpl` is every file this CLI writes, held
+# byte-for-byte as it will be written. Two consequences, and both are here
+# rather than anywhere else:
+#
+#   1. **Line endings are LF, always.** esbuild's `text` loader puts a `.tpl`
+#      into the bundle exactly as the checkout has it, so a Windows clone that
+#      normalised these to CRLF would ship a CLI that writes CRLF into every
+#      generated project — where that project's own `prettier --check .` fails
+#      on the first run. `text eol=lf` is what makes the working copy LF on
+#      every platform.
+#   2. **GitHub highlights the diff.** The extension is `.tpl` so that `tsc`,
+#      eslint and `scripts/verify-package.mjs` leave these files alone; the
+#      cost is that linguist cannot guess a language, and `linguist-language`
+#      is what pays it back.
+*.tpl text eol=lf
+
+*.ts.tpl linguist-language=TypeScript
+*.md.tpl linguist-language=Markdown
+*.jsonc.tpl linguist-language=JSON-with-Comments
+*.json.tpl linguist-language=JSON
+*.js.tpl linguist-language=JavaScript

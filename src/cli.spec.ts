@@ -68,7 +68,12 @@ function newestInput(): number {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(full);
-      // A spec is not built, so editing one is not a reason to build.
+      // A spec is not built, so editing one is not a reason to build. A `.tpl`
+      // is: `src/agent/templates/` holds every generated file as text that
+      // esbuild compiles in, so editing one changes the bin without touching a
+      // single `.ts` — and `soul.spec.ts.tpl` is a *generated* project's spec,
+      // not one of ours, which is why the `.tpl` test comes first.
+      else if (entry.name.endsWith(".tpl")) inputs.push(full);
       else if (entry.name.endsWith(".ts") && !entry.name.endsWith(".spec.ts")) {
         inputs.push(full);
       }
