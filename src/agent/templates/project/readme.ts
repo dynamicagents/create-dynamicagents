@@ -1,14 +1,25 @@
 import { MODELS_URL } from "../../../train";
 import type { AgentNames, AgentSpec } from "../../spec";
+import { render } from "../render";
 import { mdTable } from "../text";
+import source from "./README.md.tpl";
 
 /** `README.md` — what this is, how to run it, how to put it in front of people. */
 export function readmeMd(spec: AgentSpec, n: AgentNames): string {
-  const capabilities = spec.capabilities.includes("browser")
-    ? "\n- **Reads web pages**, through Browser Rendering.\n"
-    : "";
+  const browser = spec.capabilities.includes("browser");
+
+  /**
+   * The two bullets that are there only when the thing they describe is, as
+   * mid-sentence phrases rather than `$when` regions: prettier splits a
+   * markdown list and inserts blank lines around an `<!-- … -->` between two
+   * items, so a region in a `.md.tpl` would reformat the text it holds.
+   * `../render.ts` says the same, and it is why markdown varies by token only.
+   */
   const delegation = spec.subAgent
     ? "\n- **Delegates.** Self-contained pieces of a request go to a sub-agent and come back composed into one answer.\n"
+    : "";
+  const capabilities = browser
+    ? "\n- **Reads web pages**, through Browser Rendering.\n"
     : "";
 
   const registration = mdTable(
@@ -46,74 +57,18 @@ export function readmeMd(spec: AgentSpec, n: AgentNames): string {
     ]
   );
 
-  return `# ${spec.name}
-
-${spec.description}
-
-A Dynamic Agent on Cloudflare Workers: zero-trust A2A, a durable task
-lifecycle, and one continuous, self-compacting conversation per caller. Built on
-[\`@dynamicagents/core\`](https://github.com/dynamicagents/core), scaffolded with
-\`npm create dynamicagents\`.
-
-- **One Worker, one agent.** This deployment serves exactly this agent, as the
-  A2A tenant \`${spec.tenant}\`.${delegation}${capabilities}- **Its own everything.** Its own wrangler config, its own bindings, its own
-  signing key. Nothing it does can affect another agent.
-
-> **A paid Cloudflare Workers plan is required.** The model this agent runs on is
-> not served on the free tier${spec.capabilities.includes("browser") ? ", and neither is Browser Rendering" : ""}. There is no free-tier
-> configuration of this project.
-
----
-
-## Quick start
-
-\`\`\`bash
-npm run keygen     # one Ed25519 key for this deployment
-\`\`\`
-
-Put the private JWK in \`.env\` as \`A2A_SIGNING_KEY\`, and the gatekeeper origins
-you accept calls from in \`GATEKEEPER_ORIGINS\`. [\`.env.example\`](.env.example)
-says what each one is.
-
-\`\`\`bash
-npm run check      # types, format, lint, typecheck
-npm test           # the suite, in real workerd
-npm run dev        # local
-\`\`\`
-
-To ship, set the same secrets with \`wrangler secret put\` (or push the file with
-\`npx wrangler deploy --secrets-file .env\`) and:
-
-\`\`\`bash
-npm run deploy
-\`\`\`
-
-Then register the agent with your gatekeeper:
-
-${registration}
-
-A tenant is required on every request — there is no default agent and no
-implicit routing. The card at \`/.well-known/agent-card.json\` describes the
-deployment; the agent's own card comes from \`GetExtendedAgentCard\` with that
-tenant id.
-
-**Keep one origin.** Core derives the card's URL, its \`jku\` and the token
-audience from the origin a request arrives on, so a second origin advertises a
-second audience and a token minted for one will not verify against the other.
-\`wrangler.jsonc\` says what to change when you move to a domain of your own.
-
----
-
-## The files you will actually edit
-
-${files}
-
-[\`AGENTS.md\`](AGENTS.md) is the rest: where everything goes, what the tests
-pin, the two invariants worth knowing, and how to bring a second agent into this
-Worker later.
-
-## License
-
-Yours.
-`;
+  return render(source, {
+    tokens: {
+      NAME: spec.name,
+      DESCRIPTION: spec.description,
+      TENANT: spec.tenant,
+      DELEGATION: delegation,
+      CAPABILITIES: capabilities,
+      BROWSER_NOTE: browser ? ", and neither is Browser Rendering" : "",
+      // Both tables keep their helper: `mdTable` pads every cell to its
+      // column's width, so the layout depends on the tenant id in it.
+      REGISTRATION: registration,
+      FILES_TABLE: files
+    }
+  });
 }

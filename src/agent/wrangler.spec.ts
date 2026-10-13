@@ -62,7 +62,8 @@ interface Wrangler {
   name: string;
   main: string;
   compatibility_date: string;
-  compatibility_flags: string[];
+  /** Declared, so the spec below can assert there are none. */
+  compatibility_flags?: string[];
   workers_dev: boolean;
   ai: { binding: string };
   browser?: { binding: string };
@@ -90,14 +91,28 @@ describe.each(variants())("$label", ({ spec }) => {
   it("is named for the tenant, and points at the Worker entry", () => {
     expect(wrangler.name).toBe(spec.tenant);
     expect(wrangler.main).toBe("src/index.ts");
-    expect(wrangler.compatibility_flags).toContain("nodejs_compat");
   });
 
   it("declares the compatibility date this CLI pins", () => {
     // Against `src/train.ts` itself, not against the fixture that generated
     // the file: a template that hardcoded a date would otherwise pass here for
-    // as long as the hardcoded date happened to match.
+    // as long as the hardcoded date happened to match. The date is derived
+    // from the workerd behind the pinned wrangler, so this is also what
+    // notices a template that stopped reading the derivation.
     expect(wrangler.compatibility_date).toBe(COMPATIBILITY_DATE);
+  });
+
+  it("declares no compatibility flags at all", () => {
+    // `nodejs_compat` used to be here and is now the date's business: workerd
+    // turns it on by default from 2026-08-04, which every date this CLI pins
+    // is past. Measured, not assumed — a redundant `nodejs_compat` is accepted
+    // without even a warning, so nothing but this spec would notice it coming
+    // back, and a flag that says nothing is a line in a file whose comments
+    // are the point of it.
+    //
+    // Should a capability ever need a real flag, it arrives whole the way a
+    // binding does, and this assertion is where that decision gets made.
+    expect(wrangler.compatibility_flags).toBeUndefined();
   });
 
   it("serves one origin to start on", () => {
