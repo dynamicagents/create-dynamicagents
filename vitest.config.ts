@@ -28,10 +28,19 @@ export default defineConfig({
   plugins: [templatesAsText()],
   test: {
     /**
-     * Stated rather than left to the default, which is a glob wide enough to
-     * collect `soul.spec.ts.tpl` — a *generated* project's spec, which imports
-     * `@dynamicagents/core` and is not meant to run here — as a suite of this
-     * one. The specs of this package are `src/**\/*.spec.ts` and nothing else.
+     * The specs of this package are `src/**\/*.spec.ts` and nothing else,
+     * stated rather than inferred.
+     *
+     * **What keeps a generated project's spec out is the extension, not this
+     * line.** `templates/test/soul.spec.ts.tpl` is a spec of the project this
+     * CLI writes — it imports `@dynamicagents/core` and would fail here — and
+     * measured, vitest's default glob never matches it: the glob wants a name
+     * *ending* in `.spec.ts`, and that one ends in `.tpl`. Collection is the
+     * same 18 files with this line and without it.
+     *
+     * It stays because the set is worth pinning: a `.tpl` dropped from a
+     * template's name, or a default that widens, becomes a failure in a file
+     * nobody here wrote. One line is cheaper than finding that out.
      */
     include: ["src/**/*.spec.ts"]
   }
