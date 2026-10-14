@@ -150,10 +150,16 @@ is what runs it.
 view wrangler@<floor> dependencies.workerd` — and `COMPATIBILITY_DATE` is its
 release date, derived, because a workerd version _is_ a date and a date is only
 honoured by the workerd reading it. So the two move in one edit and cannot drift
-apart. It is pinned rather than chased for the reason create-cloudflare pins
-it: workerd refuses a date newer than the runtime reading it, so chasing the
-newest release breaks every project installed against an older wrangler. The
-pin's own failure is the quiet one — going stale — and
+apart. `TOOLCHAIN`'s `@cloudflare/vitest-plugin` is the third name in that same
+edit: the plugin pins miniflare exactly, miniflare carries a workerd of its own,
+and that is the runtime a generated project's `npm test` boots — reading this
+same date — so a plugin floor behind `WORKERD` is a project whose tests refuse a
+date its deploy accepts. `check-compat-date.mjs` reads the project root's
+workerd, which is wrangler's; the `npm test` leg in `scaffold.yml` speaks for
+miniflare's. It is pinned rather than chased for the reason create-cloudflare
+pins it: workerd refuses a date newer than the runtime reading it, so chasing
+the newest release breaks every project installed against an older wrangler.
+The pin's own failure is the quiet one — going stale — and
 `scripts/check-compat-date.mjs` is the answer, run from `scaffold.yml` because
 workerd is only ever a transitive of a _generated_ project's wrangler and there
 is nothing local for it to read. Past the pinned date `nodejs_compat` is on by
