@@ -91,9 +91,9 @@ export const TOOLCHAIN = {
  * floor older than this version is a project whose tests refuse a date its
  * deploy accepts, so both floors name one runtime: `^1.4.0` pins wrangler
  * 4.149.0 and miniflare 5.20261006.1-alpha, and both are on this workerd.
- * Nothing checks that pairing — an install takes the newest each range allows,
- * so a broken one surfaces only where a floor is what resolves — which is why
- * it is one edit and not a check.
+ * Nothing checks that pairing. An install takes the newest each range allows,
+ * so a plugin floor left behind would show up in a floor install and nowhere
+ * else — which is why both floors move in one edit.
  *
  * **Pinned, deliberately not derived at run time.** create-cloudflare does the
  * same and for a reason worth copying: workerd refuses a compatibility date
