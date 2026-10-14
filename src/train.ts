@@ -19,8 +19,9 @@
  * train's own declarations is an `ERESOLVE` before any code runs, which
  * `.github/workflows/scaffold.yml` sees on every pull request.
  *
- * `COMPATIBILITY_DATE` is part of the same set, paired with `wrangler`: a date
- * newer than the installed wrangler knows about is a hard error, not a warning.
+ * `COMPATIBILITY_DATE` is part of the same set, paired with `wrangler` and with
+ * `@cloudflare/vitest-plugin`: a date newer than the runtime either of them
+ * installs is a hard error, not a warning.
  */
 
 /** The train itself: what the generated code is written against. */
@@ -90,6 +91,9 @@ export const TOOLCHAIN = {
  * floor older than this version is a project whose tests refuse a date its
  * deploy accepts, so both floors name one runtime: `^1.4.0` pins wrangler
  * 4.149.0 and miniflare 5.20261006.1-alpha, and both are on this workerd.
+ * Nothing checks that pairing — an install takes the newest each range allows,
+ * so a broken one surfaces only where a floor is what resolves — which is why
+ * it is one edit and not a check.
  *
  * **Pinned, deliberately not derived at run time.** create-cloudflare does the
  * same and for a reason worth copying: workerd refuses a compatibility date

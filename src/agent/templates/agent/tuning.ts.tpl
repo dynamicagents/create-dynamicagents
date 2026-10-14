@@ -24,7 +24,7 @@ export interface AgentTuning {
    *
    * Compaction is also when Think re-renders the system prompt: until the next
    * one, the agent reads the soul and the memory as they stood when the prompt
-   * was last rendered, whatever has been deployed or written since.
+   * was last rendered, no matter what has been deployed or written since.
    */
   compactAfterTokens: number;
   /** The recent tail compaction keeps verbatim. */
