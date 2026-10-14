@@ -155,14 +155,16 @@ edit: the plugin pins miniflare exactly, miniflare carries a workerd of its own,
 and that is the runtime a generated project's `npm test` boots — reading this
 same date — so a plugin floor behind `WORKERD` is a project whose tests refuse a
 date its deploy accepts. `check-compat-date.mjs` reads the project root's
-workerd, which is wrangler's; the `npm test` leg in `scaffold.yml` speaks for
-miniflare's. It is pinned rather than chased for the reason create-cloudflare
+workerd, which is wrangler's, and the `npm test` leg in `scaffold.yml` boots
+miniflare's — but neither reads a _floor_, since an install takes the newest
+each range allows, so what holds the two floors on one runtime is this edit and
+not a check. It is pinned rather than chased for the reason create-cloudflare
 pins it: workerd refuses a date newer than the runtime reading it, so chasing
 the newest release breaks every project installed against an older wrangler.
 The pin's own failure is the quiet one — going stale — and
 `scripts/check-compat-date.mjs` is the answer, run from `scaffold.yml` because
-workerd is only ever a transitive of a _generated_ project's wrangler and there
-is nothing local for it to read. Past the pinned date `nodejs_compat` is on by
+workerd only ever arrives inside a _generated_ project's install and there is
+nothing local for it to read. Past the pinned date `nodejs_compat` is on by
 default, which is why a generated `wrangler.jsonc` declares no
 `compatibility_flags` at all; `train.spec.ts` holds that relation so the flag
 cannot quietly become necessary again.

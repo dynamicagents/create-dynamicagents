@@ -22,9 +22,9 @@ export interface AgentTuning {
   /**
    * Compact once the conversation's estimate crosses this.
    *
-   * Compaction is also when Think re-renders the system prompt: until it
-   * happens, the agent reads the soul and the memory the conversation started
-   * with, whatever has been deployed or written since.
+   * Compaction is also when Think re-renders the system prompt: until the next
+   * one, the agent reads the soul and the memory as they stood when the prompt
+   * was last rendered, whatever has been deployed or written since.
    */
   compactAfterTokens: number;
   /** The recent tail compaction keeps verbatim. */
