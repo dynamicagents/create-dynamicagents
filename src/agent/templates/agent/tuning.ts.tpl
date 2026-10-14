@@ -19,7 +19,13 @@ export interface AgentTuning {
    * timing out.
    */
   compactionModelId: string;
-  /** Compact once the conversation's estimate crosses this. */
+  /**
+   * Compact once the conversation's estimate crosses this.
+   *
+   * Compaction is also when Think re-renders the system prompt: until it
+   * happens, the agent reads the soul and the memory the conversation started
+   * with, whatever has been deployed or written since.
+   */
   compactAfterTokens: number;
   /** The recent tail compaction keeps verbatim. */
   keepRecentTokens: number;
@@ -29,6 +35,11 @@ export interface AgentTuning {
  * Tight on purpose$WHY_TIGHT.
  * Raise `compactAfterTokens` when the agent keeps losing something it needed,
  * and watch what the turn costs.
+ *
+ * Watch the prompt too, not only the cost: that number is how stale a long
+ * conversation's system prompt can get as much as it is how much each call
+ * carries, and a conversation that never reaches it runs to its end on the
+ * soul and the memory it started with.
  */
 export const TUNING: AgentTuning = {
   modelId: $MODEL_ID,
