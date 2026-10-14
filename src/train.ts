@@ -19,8 +19,9 @@
  * train's own declarations is an `ERESOLVE` before any code runs, which
  * `.github/workflows/scaffold.yml` sees on every pull request.
  *
- * `COMPATIBILITY_DATE` is part of the same set, paired with `wrangler`: a date
- * newer than the installed wrangler knows about is a hard error, not a warning.
+ * `COMPATIBILITY_DATE` is part of the same set, paired with `wrangler` and with
+ * `@cloudflare/vitest-plugin`: a date newer than the runtime either of them
+ * installs is a hard error, not a warning.
  */
 
 /** The train itself: what the generated code is written against. */
@@ -58,19 +59,24 @@ export const RUNTIME = {
  * The two move together, in one commit, or neither moves.
  */
 export const TOOLCHAIN = {
-  "@cloudflare/vitest-plugin": "^1.2.0",
+  /**
+   * Paired with {@link WORKERD} as much as `wrangler` is: this pins the
+   * miniflare a generated project's tests boot, and that runtime reads the
+   * compatibility date too.
+   */
+  "@cloudflare/vitest-plugin": "^1.4.0",
   "@types/node": "^24.19.2",
   eslint: "^10.10.0",
   prettier: "^3.9.6",
   typescript: "^6.0.3",
   "typescript-eslint": "^8.70.0",
   vitest: "^4.1.11",
-  wrangler: "^4.131.2"
+  wrangler: "^4.149.0"
 } as const;
 
 /**
  * The workerd that {@link TOOLCHAIN}'s `wrangler` floor depends on, exactly as
- * npm resolves it: `npm view wrangler@4.131.2 dependencies.workerd`.
+ * npm resolves it: `npm view wrangler@4.149.0 dependencies.workerd`.
  *
  * Here instead of the compatibility date, because **the date is this version**.
  * A workerd version *is* a release date, and a compatibility date is only ever
@@ -78,6 +84,16 @@ export const TOOLCHAIN = {
  * date is derived from it, which makes the pairing mechanical rather than a
  * thing to remember. Moving `wrangler` above means moving this line, and the
  * date follows on its own.
+ *
+ * **`@cloudflare/vitest-plugin`'s floor moves with it**, because that plugin
+ * pins miniflare exactly and miniflare carries a workerd of its own — the one
+ * a generated project's `npm test` boots, reading this same date. A plugin
+ * floor older than this version is a project whose tests refuse a date its
+ * deploy accepts, so both floors name one runtime: `^1.4.0` pins wrangler
+ * 4.149.0 and miniflare 5.20261006.1-alpha, and both are on this workerd.
+ * Nothing checks that pairing. An install takes the newest each range allows,
+ * so a plugin floor left behind would show up in a floor install and nowhere
+ * else — which is why both floors move in one edit.
  *
  * **Pinned, deliberately not derived at run time.** create-cloudflare does the
  * same and for a reason worth copying: workerd refuses a compatibility date
@@ -88,7 +104,7 @@ export const TOOLCHAIN = {
  * reads the workerd a real install produced and fails when this has fallen too
  * far behind it.
  */
-export const WORKERD = "1.20260911.1";
+export const WORKERD = "1.20261006.1";
 
 /**
  * The release date inside a workerd version: `1.20260911.1` → `2026-09-11`.

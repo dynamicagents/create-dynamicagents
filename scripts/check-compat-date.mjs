@@ -98,7 +98,10 @@ if (days > MAX_DAYS_BEHIND) {
       `  Bump wrangler and WORKERD together in src/train.ts — they are one\n` +
       `  decision. WORKERD is what npm resolves for the new floor:\n\n` +
       `      npm view wrangler@<floor> dependencies.workerd\n\n` +
-      `  COMPATIBILITY_DATE follows from it, and nothing else needs editing.\n`
+      `  COMPATIBILITY_DATE follows from it, and one more floor moves with\n` +
+      `  it: @cloudflare/vitest-plugin pins the miniflare a generated\n` +
+      `  project's tests boot, and that workerd reads this date too — move\n` +
+      `  it to a version whose miniflare carries the new WORKERD.\n`
   );
   process.exit(1);
 }
