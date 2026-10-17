@@ -71,16 +71,15 @@ export const TOOLCHAIN = {
   typescript: "^6.0.3",
   "typescript-eslint": "^8.70.0",
   /**
-   * **A major behind this package's own `vitest`, and that is the pin doing
-   * its job.** A generated project tests through `@cloudflare/vitest-plugin`,
-   * and on vitest 5 that pool crashes workerd once the Worker's module graph
-   * is big enough: it ships every module's code and inline source map over a
-   * WebSocket, and workerd closes the socket with `1009: Message is too
-   * large`. The test file is never reported, so the failure reads as a
-   * missing test rather than a broken runtime
-   * (cloudflare/workers-sdk#16331). The caret is what holds a new project
-   * clear of it — an install takes the newest the range allows, and on `^4`
-   * that can never be 5. This moves when the pool is fixed, with the train.
+   * **4 until the Workers pool takes 5**, whatever this package tests itself
+   * with. A generated project tests through `@cloudflare/vitest-plugin`, and
+   * on vitest 5 that pool crashes workerd mid-run and the test file it was
+   * running goes unreported — `cloudflare/workers-sdk#16331`, and core's own
+   * `AGENTS.md` is the home of that ceiling and of what to re-check before
+   * lifting it. The whole train sits below it or none of it does, so this
+   * moves with core, plugins and starter and not before them. The caret is
+   * what holds a new project clear in the meantime: an install takes the
+   * newest the range allows, and on `^4` that can never be 5.
    */
   vitest: "^4.1.11",
   wrangler: "^4.151.1"
