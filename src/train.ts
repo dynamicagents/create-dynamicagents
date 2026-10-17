@@ -26,8 +26,8 @@
 
 /** The train itself: what the generated code is written against. */
 export const TRAIN = {
-  core: ">=0.14.0 <0.15.0",
-  plugins: ">=0.14.0 <0.15.0"
+  core: ">=0.16.0 <0.17.0",
+  plugins: ">=0.16.0 <0.17.0"
 } as const;
 
 /**
