@@ -64,19 +64,31 @@ export const TOOLCHAIN = {
    * miniflare a generated project's tests boot, and that runtime reads the
    * compatibility date too.
    */
-  "@cloudflare/vitest-plugin": "^1.4.0",
+  "@cloudflare/vitest-plugin": "^1.4.4",
   "@types/node": "^24.19.2",
   eslint: "^10.10.0",
   prettier: "^3.9.6",
   typescript: "^6.0.3",
   "typescript-eslint": "^8.70.0",
+  /**
+   * **A major behind this package's own `vitest`, and that is the pin doing
+   * its job.** A generated project tests through `@cloudflare/vitest-plugin`,
+   * and on vitest 5 that pool crashes workerd once the Worker's module graph
+   * is big enough: it ships every module's code and inline source map over a
+   * WebSocket, and workerd closes the socket with `1009: Message is too
+   * large`. The test file is never reported, so the failure reads as a
+   * missing test rather than a broken runtime
+   * (cloudflare/workers-sdk#16331). The caret is what holds a new project
+   * clear of it — an install takes the newest the range allows, and on `^4`
+   * that can never be 5. This moves when the pool is fixed, with the train.
+   */
   vitest: "^4.1.11",
-  wrangler: "^4.149.0"
+  wrangler: "^4.151.1"
 } as const;
 
 /**
  * The workerd that {@link TOOLCHAIN}'s `wrangler` floor depends on, exactly as
- * npm resolves it: `npm view wrangler@4.149.0 dependencies.workerd`.
+ * npm resolves it: `npm view wrangler@4.151.1 dependencies.workerd`.
  *
  * Here instead of the compatibility date, because **the date is this version**.
  * A workerd version *is* a release date, and a compatibility date is only ever
@@ -89,8 +101,8 @@ export const TOOLCHAIN = {
  * pins miniflare exactly and miniflare carries a workerd of its own — the one
  * a generated project's `npm test` boots, reading this same date. A plugin
  * floor older than this version is a project whose tests refuse a date its
- * deploy accepts, so both floors name one runtime: `^1.4.0` pins wrangler
- * 4.149.0 and miniflare 5.20261006.1-alpha, and both are on this workerd.
+ * deploy accepts, so both floors name one runtime: `^1.4.4` pins wrangler
+ * 4.151.1 and miniflare 5.20261012.1-beta, and both are on this workerd.
  * Nothing checks that pairing. An install takes the newest each range allows,
  * so a plugin floor left behind would show up in a floor install and nowhere
  * else — which is why both floors move in one edit.
@@ -104,7 +116,7 @@ export const TOOLCHAIN = {
  * reads the workerd a real install produced and fails when this has fallen too
  * far behind it.
  */
-export const WORKERD = "1.20261006.1";
+export const WORKERD = "1.20261012.1";
 
 /**
  * The release date inside a workerd version: `1.20260911.1` → `2026-09-11`.
