@@ -235,3 +235,17 @@ changes batch on `main` until a PR that bumps the version.
 Bump with `npm version patch` or `npm version minor`, not by hand: editing
 `version` directly leaves `package-lock.json` behind, and `npm ci` does not say
 so.
+
+---
+
+## Copilot reviews a pull request once
+
+Opening a pull request ready for review gets it one Copilot review, requested
+automatically, and that is the only one it gets. A push asks for nothing, and a
+second review happens only when a person requests one by hand.
+
+So **never wait for a second review**: once Copilot's review has landed, answer
+it and hand over, because polling for another waits on something that will not
+come. Never request one either, since every review is billed. The workspace's
+AGENTS.md, under "Pull requests", has how to tell a review has landed and how to
+answer it.
