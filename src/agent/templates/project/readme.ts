@@ -40,7 +40,7 @@ export function readmeMd(spec: AgentSpec, n: AgentNames): string {
       ],
       [
         `[\`${n.dir}/tuning.ts\`](${n.dir}/tuning.ts)`,
-        `Its model, and when the conversation compacts. Every model id is at ${MODELS_URL}`
+        `Its model, when the conversation compacts, and how long a step waits for an event that never arrived. Every model id is at ${MODELS_URL}`
       ],
       [
         `[\`${n.dir}/manifest.ts\`](${n.dir}/manifest.ts)`,
