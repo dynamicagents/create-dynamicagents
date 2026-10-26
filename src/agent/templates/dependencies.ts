@@ -26,6 +26,7 @@ export function dependenciesFor(
 ): Record<string, string> {
   const deps: Record<string, string> = {
     "@dynamicagents/core": TRAIN.core,
+    "@cloudflare/computer": RUNTIME["@cloudflare/computer"],
     "@cloudflare/think": RUNTIME["@cloudflare/think"],
     agents: RUNTIME.agents,
     ai: RUNTIME.ai,

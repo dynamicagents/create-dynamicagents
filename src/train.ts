@@ -26,8 +26,8 @@
 
 /** The train itself: what the generated code is written against. */
 export const TRAIN = {
-  core: ">=0.16.0 <0.17.0",
-  plugins: ">=0.16.0 <0.17.0"
+  core: ">=0.17.0 <0.18.0",
+  plugins: ">=0.17.0 <0.18.0"
 } as const;
 
 /**
@@ -40,9 +40,15 @@ export const TRAIN = {
  * project, and one narrower than core's denies a user a version that works.
  */
 export const RUNTIME = {
-  "@cloudflare/think": ">=0.20.2 <0.21.0",
-  agents: ">=0.28.0 <0.29.0",
+  "@cloudflare/think": ">=0.21.0 <0.22.0",
+  agents: ">=0.30.0 <0.31.0",
   ai: "^7.0.88",
+  /**
+   * Think's own non-optional peer, and core's. A generated project gets it
+   * whichever way, since npm installs a missing peer, so what naming it buys is
+   * a manifest that says what the project runs on.
+   */
+  "@cloudflare/computer": "^0.5.1",
   "workers-ai-provider": "^4.0.0",
   /** The A2A protocol's own package: its constants and types. */
   "@a2a-js/sdk": "^1.2.0",
@@ -64,12 +70,12 @@ export const TOOLCHAIN = {
    * miniflare a generated project's tests boot, and that runtime reads the
    * compatibility date too.
    */
-  "@cloudflare/vitest-plugin": "^1.4.4",
+  "@cloudflare/vitest-plugin": "^1.4.7",
   "@types/node": "^24.19.2",
   eslint: "^10.10.0",
   prettier: "^3.9.6",
   typescript: "^6.0.3",
-  "typescript-eslint": "^8.70.0",
+  "typescript-eslint": "^8.72.0",
   /**
    * **4 until the Workers pool takes 5**, whatever this package tests itself
    * with. A generated project tests through `@cloudflare/vitest-plugin`, and
@@ -82,12 +88,12 @@ export const TOOLCHAIN = {
    * newest the range allows, and on `^4` that can never be 5.
    */
   vitest: "^4.1.11",
-  wrangler: "^4.151.1"
+  wrangler: "^4.152.0"
 } as const;
 
 /**
  * The workerd that {@link TOOLCHAIN}'s `wrangler` floor depends on, exactly as
- * npm resolves it: `npm view wrangler@4.151.1 dependencies.workerd`.
+ * npm resolves it: `npm view wrangler@4.152.0 dependencies.workerd`.
  *
  * Here instead of the compatibility date, because **the date is this version**.
  * A workerd version *is* a release date, and a compatibility date is only ever
@@ -100,8 +106,8 @@ export const TOOLCHAIN = {
  * pins miniflare exactly and miniflare carries a workerd of its own — the one
  * a generated project's `npm test` boots, reading this same date. A plugin
  * floor older than this version is a project whose tests refuse a date its
- * deploy accepts, so both floors name one runtime: `^1.4.4` pins wrangler
- * 4.151.1 and miniflare 5.20261012.1-beta, and both are on this workerd.
+ * deploy accepts, so both floors name one runtime: `^1.4.7` pins wrangler
+ * 4.152.0 and miniflare 5.20261019.2-beta, and both are on this workerd.
  * Nothing checks that pairing. An install takes the newest each range allows,
  * so a plugin floor left behind would show up in a floor install and nowhere
  * else — which is why both floors move in one edit.
@@ -115,7 +121,7 @@ export const TOOLCHAIN = {
  * reads the workerd a real install produced and fails when this has fallen too
  * far behind it.
  */
-export const WORKERD = "1.20261012.1";
+export const WORKERD = "1.20261019.1";
 
 /**
  * The release date inside a workerd version: `1.20260911.1` → `2026-09-11`.

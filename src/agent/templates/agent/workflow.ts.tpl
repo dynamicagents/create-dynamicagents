@@ -5,6 +5,7 @@ import {
   type TaskParams,
   type TaskStep
 } from "@dynamicagents/core/workflow";
+import { TUNING } from "./tuning";
 
 /**
  * This tenant's pipeline: one step, the whole task, on the caller's own
@@ -32,7 +33,8 @@ export class $WORKFLOW_CLASS extends TaskWorkflow<Env> {
   ): Promise<PipelineResult> {
     const reply = await step.agent("main", {
       agent: this.$CAMEL,
-      input: event.payload.text
+      input: event.payload.text,
+      reconcile: TUNING.reconcile
     });
     return { reply };
   }

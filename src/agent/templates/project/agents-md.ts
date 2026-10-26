@@ -28,7 +28,7 @@ export function agentsMd(spec: AgentSpec, n: AgentNames): string {
       ["what the agent _is_ — its identity, its rules", `\`${n.dir}/soul.ts\``],
       ["which capabilities it has", `\`${n.dir}/plugins.ts\``],
       [
-        "the model, or when the conversation compacts",
+        "the model, when the conversation compacts, or how long a step waits",
         `\`${n.dir}/tuning.ts\``
       ],
       ["what it advertises to a gatekeeper", `\`${n.dir}/manifest.ts\``],

@@ -1,3 +1,5 @@
+import type { Reconcile } from "@dynamicagents/core/workflow";
+
 /**
  * What this agent tunes. Core ships no numbers, so each one here is chosen.
  *
@@ -29,6 +31,18 @@ export interface AgentTuning {
   compactAfterTokens: number;
   /** The recent tail compaction keeps verbatim. */
   keepRecentTokens: number;
+  /**
+   * How long the pipeline waits for its step job's next event before it pulls
+   * the agent and the host for whatever it has not read. That is what an event
+   * the platform accepts and never delivers costs: at worst `maxMs`, instead of
+   * a task that waits for it forever.
+   *
+   * A wait that finds nothing doubles the next one, up to `maxMs`, so a
+   * question left open for days costs a few hundred wakes out of the ten
+   * thousand steps a Workflow instance holds. Lower `afterMs` to notice a lost
+   * event sooner, at more wakes per task.
+   */
+  reconcile: Reconcile;
 }
 
 /**
@@ -45,5 +59,6 @@ export const TUNING: AgentTuning = {
   modelId: $MODEL_ID,
   compactionModelId: $MODEL_ID,
   compactAfterTokens: 16_000,
-  keepRecentTokens: 5_000
+  keepRecentTokens: 5_000,
+  reconcile: { afterMs: 5 * 60_000, maxMs: 30 * 60_000 }
 };
