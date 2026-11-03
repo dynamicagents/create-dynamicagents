@@ -62,6 +62,14 @@
     "binding": "BROWSER",
     "remote": true
   },
+
+  // The Dynamic Worker the browser tool runs the model's code in: a fresh one
+  // per call, with no network access of its own. The plugin declares this
+  // binding alongside `BROWSER`, so an agent that has one and not the other
+  // fails at start rather than at its first browser call.
+  //
+  // Not inherited by a named environment, so each one needs its own entry.
+  "worker_loaders": [{ "binding": "LOADER" }],
   // $end
 
   // The agent's task host, which holds a caller's A2A tasks, and the step agent

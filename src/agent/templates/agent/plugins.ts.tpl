@@ -28,8 +28,9 @@ import { browser } from "@dynamicagents/plugins/browser";
  */
 // $when browser
 export const plugins = (env: Env): AgentPlugin<Env>[] => [
-  // Read web pages. Needs the `BROWSER` binding in wrangler.jsonc.
-  browser({ binding: env.BROWSER })
+  // Drive a browser by writing code. Needs the `BROWSER` binding and the
+  // `LOADER` worker loader in wrangler.jsonc.
+  browser({ binding: env.BROWSER, loader: env.LOADER })
 ];
 // $end
 // $when !browser
@@ -38,7 +39,7 @@ export const plugins = (_env: Env): AgentPlugin<Env>[] => [
   // in wrangler.jsonc plus a skill on the card in ./manifest.ts — for example:
   //
   //   import { browser } from "@dynamicagents/plugins/browser";
-  //   browser({ binding: env.BROWSER })
+  //   browser({ binding: env.BROWSER, loader: env.LOADER })
   //
   // The parameter is `_env` only because nothing reads it yet; the first
   // plugin that needs a binding takes the underscore off.
