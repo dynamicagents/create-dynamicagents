@@ -67,6 +67,7 @@ interface Wrangler {
   workers_dev: boolean;
   ai: { binding: string };
   browser?: { binding: string };
+  worker_loaders?: { binding: string }[];
   durable_objects: { bindings: { class_name: string; name: string }[] };
   migrations: { tag: string; new_sqlite_classes: string[] }[];
   workflows: { name: string; binding: string; class_name: string }[];
@@ -157,11 +158,17 @@ describe.each(variants())("$label", ({ spec }) => {
     ]);
   });
 
-  it("binds the browser only where it is installed", () => {
-    // Core checks a plugin's bindings when the agent starts, so the binding
-    // arrives with the plugin or not at all.
-    expect(wrangler.browser?.binding).toBe(
-      spec.capabilities.includes("browser") ? "BROWSER" : undefined
+  it("binds the browser only where it is installed, and its loader with it", () => {
+    // Core checks a plugin's bindings when the agent starts, so a binding
+    // arrives with the plugin or not at all. The browser plugin needs two —
+    // the Browser Rendering binding and the worker loader its tool runs the
+    // model's code in — and it declares both in `requires`, so one without the
+    // other is an agent that throws on its first request.
+    const installed = spec.capabilities.includes("browser");
+
+    expect(wrangler.browser?.binding).toBe(installed ? "BROWSER" : undefined);
+    expect(wrangler.worker_loaders?.map((it) => it.binding)).toEqual(
+      installed ? ["LOADER"] : undefined
     );
   });
 });

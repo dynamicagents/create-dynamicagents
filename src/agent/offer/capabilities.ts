@@ -25,7 +25,7 @@ export interface CapabilityOption {
 export const CAPABILITIES: readonly CapabilityOption[] = [
   {
     value: "browser",
-    label: "Read web pages",
-    hint: "@dynamicagents/plugins/browser — needs the BROWSER binding"
+    label: "Drive a browser",
+    hint: "@dynamicagents/plugins/browser — needs the BROWSER and LOADER bindings"
   }
 ];
