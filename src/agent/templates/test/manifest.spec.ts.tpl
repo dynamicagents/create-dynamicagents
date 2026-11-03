@@ -27,10 +27,11 @@ describe("the agent card", () => {
     }
   });
 
-  it("declares the protocol fields core cannot default", () => {
-    // `extensions` is a required (repeated) protobuf field in v1.0: empty is a
-    // declaration, absent is a protocol error. `capabilities` itself is
-    // optional in the SDK's type, which is why it is read through `?.` here.
+  it("declares the protocol fields the card has to carry", () => {
+    // `capabilities` is typed `AgentCapabilities | undefined`, which is why it
+    // is read through `?.`: a manifest may set it to `undefined` and still
+    // typecheck, and `pushNotifications` would then go unadvertised. What
+    // `extensions: []` declares is on core's `AgentManifest`.
     expect(manifest.capabilities?.extensions).toEqual([]);
     expect(manifest.capabilities?.pushNotifications).toBe(true);
   });
