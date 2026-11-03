@@ -20,8 +20,7 @@ import type { AgentManifest } from "@dynamicagents/core/a2a";
 export const manifest: AgentManifest = {
   // $block CARD_IDENTITY
   version: "0.1.0",
-  // `extensions` is a required (repeated) protobuf field in v1.0, and this
-  // agent declares no protocol extensions, so it stays empty.
+  // `extensions` empty, `extendedAgentCard` unset: core's `AgentManifest`.
   capabilities: { streaming: false, pushNotifications: true, extensions: [] },
   defaultInputModes: ["text/plain"],
   defaultOutputModes: ["text/plain"],
