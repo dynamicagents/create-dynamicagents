@@ -228,8 +228,9 @@ the templates are written against, and what a user installs once this publishes.
 ## Publishing
 
 A version bump reaching `main` is what ships it: on the first green Test run for
-a commit carrying that version, `.github/workflows/release.yml` publishes to npm
-over OIDC and only then cuts the tag. A merge without a bump ships nothing, so
+a commit carrying that version, `.github/workflows/release.yml` calls the train's
+release protocol (dev-agents' `.github/workflows/npm-release.yml`), which
+publishes to npm over OIDC and only then cuts the tag. A merge without a bump ships nothing, so
 changes batch on `main` until a PR that bumps the version.
 
 Bump with `npm version patch` or `npm version minor`, not by hand: editing
