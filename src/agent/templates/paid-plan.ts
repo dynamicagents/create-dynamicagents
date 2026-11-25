@@ -2,6 +2,13 @@
  * The Browser Rendering clause of the paid-plan requirement a generated project
  * states in its `README.md` and its `AGENTS.md`.
  *
+ * **Prose, and not a plan check.** A paid Workers plan is assumed everywhere,
+ * which `AGENTS.md` states under "A paid Workers plan is assumed": nothing in
+ * this package or in what it writes asks which plan somebody is on, offers a
+ * free-tier path or falls back to one. What varies here is whether the project
+ * installed Browser Rendering, which decides whether the sentence names a
+ * second paid service or stops at the model.
+ *
  * In `templates/` beside `merge-notes.ts` rather than in `templates/project/`:
  * this folder is what a template reads, and `templates/project/` is what a
  * template writes. `project/readme.ts` and `project/agents-md.ts` are the
