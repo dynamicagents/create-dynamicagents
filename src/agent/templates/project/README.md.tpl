@@ -11,8 +11,7 @@ lifecycle, and one continuous, self-compacting conversation per caller. Built on
   A2A tenant `$TENANT`.$DELEGATION$CAPABILITIES- **Its own everything.** Its own wrangler config, its own bindings, its own
   signing key. Nothing it does can affect another agent.
 
-> **A paid Cloudflare Workers plan is required.** The model this agent runs on is
-> not served on the free tier$BROWSER_NOTE. There is no free-tier
+> **A paid Cloudflare Workers plan is required.** There is no free-tier
 > configuration of this project.
 
 ---

@@ -14,9 +14,8 @@ which steps its task runs.
 [core]: https://github.com/dynamicagents/core
 [plugins]: https://github.com/dynamicagents/plugins
 
-**A paid Cloudflare Workers plan is a requirement**, not a recommendation: the
-model this agent runs on is not served on the free tier$BROWSER_TOO. There is
-no free-tier path in this project.
+**A paid Cloudflare Workers plan is a requirement**, not a recommendation. There
+is no free-tier path in this project.
 
 ---
 

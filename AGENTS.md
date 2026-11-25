@@ -63,21 +63,17 @@ sets the rules:
 
 ---
 
-## A paid Workers plan is assumed
+## What a generated project says about the plan
 
-Everybody running what this writes is on a **paid Cloudflare Workers plan**, and
-that is an assumption rather than something to detect or degrade from: the models
-an agent runs on are not served on the free tier, and neither is Browser
-Rendering. So nothing here offers a free-tier path, falls back to one, or asks
-which plan somebody is on, and a generated project has no configuration that runs
-without one.
+A generated `README.md` and `AGENTS.md` each state that a **paid Cloudflare
+Workers plan** is required and that the project has no free-tier configuration,
+in one sentence, with no reasoning about tiers behind it. Nothing varies: the
+sentence is in the `.tpl` file, the same for every project, with no token, no
+condition and no module standing behind it, because nothing here detects a plan
+or writes a free-tier path to fall back to.
 
-What is left of it is prose. A generated `README.md` and `AGENTS.md` each state
-the requirement in one sentence, for the person reading the project they have
-just scaffolded, and `src/agent/templates/paid-plan.ts` is one clause of that
-sentence rather than a check of anything: what it varies on is whether the
-project installed Browser Rendering, so that a project without it does not name
-a paid service it does not use.
+The assumption under that sentence is the train's rather than this package's, so
+it lives in the workspace's `AGENTS.md` and not here.
 
 ---
 
@@ -93,7 +89,7 @@ vocabulary every layer reads, `files.ts` is the project as data, and every spec
 there is a spec on what `projectFiles` returns, which is why they sit beside it.
 Below it, `offer/` is the two menus the CLI puts in front of somebody — nothing
 a template writes reads them — and `templates/` is what a template _reads_
-(`text.ts`, `render.ts`, `dependencies.ts`, `merge-notes.ts`, `paid-plan.ts`), with
+(`text.ts`, `render.ts`, `dependencies.ts`, `merge-notes.ts`), with
 `templates/agent|project|test/` the files a template _writes_ — each one a
 **pair**: the `.tpl` file holding the text verbatim, and the module that binds
 its variation.
