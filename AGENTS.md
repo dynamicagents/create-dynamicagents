@@ -66,7 +66,7 @@ vocabulary every layer reads, `files.ts` is the project as data, and every spec
 there is a spec on what `projectFiles` returns, which is why they sit beside it.
 Below it, `offer/` is the two menus the CLI puts in front of somebody — nothing
 a template writes reads them — and `templates/` is what a template _reads_
-(`text.ts`, `render.ts`, `dependencies.ts`, `merge-notes.ts`), with
+(`text.ts`, `render.ts`, `dependencies.ts`, `merge-notes.ts`, `paid-plan.ts`), with
 `templates/agent|project|test/` the files a template _writes_ — each one a
 **pair**: the `.tpl` file holding the text verbatim, and the module that binds
 its variation.
