@@ -228,9 +228,16 @@ export const tenantPlaceholder = "support";
 /**
  * The id is a public identifier, so the prompt says so where it is typed rather
  * than in a document nobody reads first.
+ *
+ * In lines rather than one sentence, because what prints it prefixes each line
+ * with clack's guide and wraps nothing: an unbroken sentence is left to the
+ * terminal, which wraps it without that prefix. `messages.spec.ts` holds the
+ * lines to the print width the prefix leaves.
  */
-export const tenantHelp =
-  "Its tenant id, its directory and its class names. A gatekeeper registers against it, so it is awkward to change later.";
+export const tenantHelp = [
+  "Its tenant id, its directory and its class names. A gatekeeper registers",
+  "against it, so it is awkward to change later."
+].join("\n");
 
 export const askDescription = "In one line, what does it do?";
 

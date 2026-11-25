@@ -64,7 +64,6 @@ export function readmeMd(spec: AgentSpec, n: AgentNames): string {
       TENANT: spec.tenant,
       DELEGATION: delegation,
       CAPABILITIES: capabilities,
-      BROWSER_NOTE: browser ? ", and neither is Browser Rendering" : "",
       // Both tables keep their helper: `mdTable` pads every cell to its
       // column's width, so the layout depends on the tenant id in it.
       REGISTRATION: registration,
