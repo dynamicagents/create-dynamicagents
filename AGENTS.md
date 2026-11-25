@@ -189,6 +189,13 @@ Two rules follow, and breaking either is invisible until somebody's first run:
   the row in `README.md`. One without the others is a flag that works and
   nothing documents, or one documented and refused; `messages.spec.ts` holds the
   three together.
+- **A message is said somewhere.** A string `src/cli/messages.ts` exports and
+  nothing reads is a sentence nobody is ever shown, whatever its docstring
+  claims, and the exhaustiveness above covers only the flags. So
+  `messages.spec.ts` holds every export of that module to being named by a
+  module that prints, or composed into a message that is. A question's help is
+  printed above its prompt rather than passed to it, because clack's `text()`
+  has no help field.
 
 ---
 

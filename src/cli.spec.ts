@@ -291,6 +291,11 @@ describe("--dry-run", () => {
     expect(run.status).toBe(0);
     expect(run.said).toContain("src/agents/demo/");
     expect(run.said).toContain(say.dryRun);
+    // The help above a question belongs to the question: a run that answered
+    // everything on the command line was asked nothing, so it is told nothing
+    // about how awkward the id is to change. Checkable only out here, because
+    // where that line is printed from is what decides it.
+    expect(run.said).not.toContain(say.tenantHelp);
     // The promise `--dry-run` makes is about the filesystem, which is the one
     // thing no pure spec can check.
     expect(existsSync(dir)).toBe(false);

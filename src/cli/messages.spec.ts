@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BLUEPRINTS } from "../agent/offer/blueprints";
 import { projectFiles } from "../agent/files";
@@ -18,6 +18,7 @@ import {
   notInstalled,
   otherModelLabel,
   outroLine,
+  tenantHelp,
   tree,
   unknownBlueprint,
   unknownKind,
@@ -32,6 +33,56 @@ const PRINT_WIDTH = 80;
 
 /** A flag as it is typed, out of how the help spells it: `--help, -h` → `--help`. */
 const flagName = (spelled: string): string => spelled.split(/[\s,]/)[0]!;
+
+/** The module the spec below is about, as `modules()` names it: under `src/`. */
+const SUBJECT = "cli/messages.ts";
+
+/**
+ * A source file with its comments taken out, so that naming a message in prose
+ * is never mistaken for saying it. String and template literals are kept, which
+ * is what keeps a `//` inside one from ending a line early.
+ */
+const code = (source: string): string =>
+  source.replace(
+    /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
+    (match) => (match.startsWith("/") ? " " : match)
+  );
+
+/** Every module the bin is bundled from, as code. No spec is one of them. */
+const modules = (): { path: string; code: string }[] => {
+  const src = new URL("../", import.meta.url);
+  return readdirSync(src, { recursive: true, encoding: "utf8" })
+    .map((entry) => entry.replaceAll("\\", "/"))
+    .filter((path) => path.endsWith(".ts") && !path.endsWith(".spec.ts"))
+    .map((path) => ({
+      path,
+      code: code(readFileSync(new URL(path, src), "utf8"))
+    }));
+};
+
+/**
+ * Which messages a module reads, by the two forms this package uses: the
+ * namespace the bin imports `./messages` as, and a named import of it. A form
+ * neither of those covers fails the spec below rather than passing it quietly,
+ * which is the direction to fail in for a check nothing else backs up.
+ */
+const reads = (source: string): string[] => [
+  ...[...source.matchAll(/\bsay\.(\w+)/g)].map((match) => match[1]!),
+  ...[...source.matchAll(/import\s*\{([^}]*)\}\s*from\s*"[^"]*messages"/g)]
+    .flatMap((match) => match[1]!.split(","))
+    .map(
+      (named) =>
+        named
+          .trim()
+          .replace(/^type\s+/, "")
+          .split(/\s+as\s+/)[0]!
+    )
+    .filter((name) => name !== "")
+];
+
+/** How many times a name appears in a source: its declaration is one of them. */
+const uses = (source: string, name: string): number =>
+  [...source.matchAll(new RegExp(`\\b${name}\\b`, "g"))].length;
 
 describe("title", () => {
   it("names the version that ran", () => {
@@ -74,6 +125,40 @@ describe("FLAGS", () => {
     for (const flag of FLAGS) {
       expect(readme, flag.key).toContain(`\`${flagName(flag.spelled)}\``);
     }
+  });
+});
+
+describe("every message", () => {
+  /**
+   * The exhaustiveness above covers the flags. This covers everything else in
+   * the module, because a string nothing reads is a sentence nobody is ever
+   * shown, and a docstring saying where it is shown does not make it so.
+   *
+   * Read out of the source rather than out of an import: what a bin *says* is
+   * not a property an imported function has, so what is checkable is whether
+   * the module that prints names the message at all. That is weaker than
+   * watching a terminal, and it is the whole of what nothing else was checking.
+   */
+  it("is said by a module that prints, or composed into one that is", () => {
+    const all = modules();
+    const own = all.find((module) => module.path === SUBJECT);
+    expect(own, SUBJECT).toBeDefined();
+    const subject = own!.code;
+
+    const said = new Set(
+      all
+        .filter((module) => module.path !== SUBJECT)
+        .flatMap((module) => reads(module.code))
+    );
+
+    const unread = [...subject.matchAll(/^export (?:const|function) (\w+)/gm)]
+      .map((match) => match[1]!)
+      // Not said anywhere, and used nowhere in the module either: one
+      // occurrence is the declaration, so a second is what makes it composed
+      // into a message that is said.
+      .filter((name) => !said.has(name) && uses(subject, name) < 2);
+
+    expect(unread).toEqual([]);
   });
 });
 
@@ -136,6 +221,18 @@ describe("the printed width", () => {
           PRINT_WIDTH
         );
       }
+    }
+  });
+
+  /**
+   * What is printed above a prompt has less of the width to spend: clack puts
+   * its guide and two spaces in front of every line and wraps none of them, so
+   * a line that fits the print width here is one the terminal leaves alone.
+   */
+  it("leaves clack's guide room in the help above a prompt", () => {
+    const GUIDE = "│  ".length;
+    for (const line of tenantHelp.split("\n")) {
+      expect(line.length + GUIDE, line).toBeLessThanOrEqual(PRINT_WIDTH);
     }
   });
 });
