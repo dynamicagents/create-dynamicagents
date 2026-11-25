@@ -295,7 +295,14 @@ describe("--dry-run", () => {
     // everything on the command line was asked nothing, so it is told nothing
     // about how awkward the id is to change. Checkable only out here, because
     // where that line is printed from is what decides it.
-    expect(run.said).not.toContain(say.tenantHelp);
+    //
+    // A line at a time, because clack prefixes every line it prints after the
+    // first with its guide: the message as one string is never a substring of
+    // what was said, so an assertion about the whole of it would hold however
+    // the message was printed.
+    for (const line of say.tenantHelp.split("\n")) {
+      expect(run.said, line).not.toContain(line);
+    }
     // The promise `--dry-run` makes is about the filesystem, which is the one
     // thing no pure spec can check.
     expect(existsSync(dir)).toBe(false);

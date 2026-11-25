@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
+import * as ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { BLUEPRINTS } from "../agent/offer/blueprints";
 import { projectFiles } from "../agent/files";
@@ -38,51 +39,144 @@ const flagName = (spelled: string): string => spelled.split(/[\s,]/)[0]!;
 const SUBJECT = "cli/messages.ts";
 
 /**
- * A source file with its comments taken out, so that naming a message in prose
- * is never mistaken for saying it. String and template literals are kept, which
- * is what keeps a `//` inside one from ending a line early.
+ * Every module the bin is bundled from, parsed. No spec is one of them.
+ *
+ * Parsed rather than matched, because the question below is about identifiers
+ * and this package's messages are strings full of the words it would match: the
+ * parse is what makes `"--help, -h"` text and `help` a name. The compiler is
+ * already a devDependency, and `npm run check` runs it over this file anyway.
  */
-const code = (source: string): string =>
-  source.replace(
-    /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
-    (match) => (match.startsWith("/") ? " " : match)
-  );
-
-/** Every module the bin is bundled from, as code. No spec is one of them. */
-const modules = (): { path: string; code: string }[] => {
+const modules = (): { path: string; source: ts.SourceFile }[] => {
   const src = new URL("../", import.meta.url);
   return readdirSync(src, { recursive: true, encoding: "utf8" })
     .map((entry) => entry.replaceAll("\\", "/"))
     .filter((path) => path.endsWith(".ts") && !path.endsWith(".spec.ts"))
     .map((path) => ({
       path,
-      code: code(readFileSync(new URL(path, src), "utf8"))
+      source: ts.createSourceFile(
+        path,
+        readFileSync(new URL(path, src), "utf8"),
+        ts.ScriptTarget.ESNext,
+        // Parents, which `reference` reads to tell a name from a property.
+        true
+      )
     }));
 };
 
-/**
- * Which messages a module reads, by the two forms this package uses: the
- * namespace the bin imports `./messages` as, and a named import of it. A form
- * neither of those covers fails the spec below rather than passing it quietly,
- * which is the direction to fail in for a check nothing else backs up.
- */
-const reads = (source: string): string[] => [
-  ...[...source.matchAll(/\bsay\.(\w+)/g)].map((match) => match[1]!),
-  ...[...source.matchAll(/import\s*\{([^}]*)\}\s*from\s*"[^"]*messages"/g)]
-    .flatMap((match) => match[1]!.split(","))
-    .map(
-      (named) =>
-        named
-          .trim()
-          .replace(/^type\s+/, "")
-          .split(/\s+as\s+/)[0]!
-    )
-    .filter((name) => name !== "")
-];
+/** Every node under one, the subject included. */
+const walk = (node: ts.Node, visit: (node: ts.Node) => void): void => {
+  visit(node);
+  ts.forEachChild(node, (child) => walk(child, visit));
+};
 
-/** How many times a name appears in a source: its declaration is one of them. */
-const uses = (source: string, name: string): number =>
-  [...source.matchAll(new RegExp(`\\b${name}\\b`, "g"))].length;
+/** `./messages` however a module reaches it, and nothing else called that. */
+const isMessages = (specifier: string): boolean =>
+  /(^|\/)messages$/.test(specifier);
+
+/**
+ * Which messages a module reads: every name it takes out of `./messages`, and
+ * every property it reads off a namespace import of it, under whatever name it
+ * imported that as.
+ *
+ * A module that reached the messages some third way would read as reading none
+ * of them, so the spec below would fail rather than pass quietly. That is the
+ * direction to fail in for a check nothing else backs up.
+ */
+const reads = (source: ts.SourceFile): string[] => {
+  const named: string[] = [];
+  const namespaces = new Set<string>();
+
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
+    if (!isMessages(statement.moduleSpecifier.text)) continue;
+    const bindings = statement.importClause?.namedBindings;
+    if (bindings === undefined) continue;
+    if (ts.isNamespaceImport(bindings)) {
+      namespaces.add(bindings.name.text);
+      continue;
+    }
+    for (const element of bindings.elements) {
+      named.push((element.propertyName ?? element.name).text);
+    }
+  }
+
+  walk(source, (node) => {
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      namespaces.has(node.expression.text)
+    ) {
+      named.push(node.name.text);
+    }
+  });
+
+  return named;
+};
+
+/** Every message a module exports: a const or a function, never a type. */
+const exported = (source: ts.SourceFile): string[] => {
+  const found: string[] = [];
+
+  for (const statement of source.statements) {
+    const modifiers = ts.canHaveModifiers(statement)
+      ? ts.getModifiers(statement)
+      : undefined;
+    const isExported = modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+    );
+    if (isExported !== true) continue;
+
+    if (ts.isVariableStatement(statement)) {
+      for (const declared of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declared.name)) found.push(declared.name.text);
+      }
+    }
+    if (ts.isFunctionDeclaration(statement) && statement.name !== undefined) {
+      found.push(statement.name.text);
+    }
+  }
+
+  return found;
+};
+
+/**
+ * Whether an identifier uses a binding, rather than being a name something else
+ * owns: a property (`flag.help`, `{ help: … }`, an interface member) says
+ * nothing about the message called `help`, and the name a declaration or an
+ * import introduces is where a binding starts rather than a use of it.
+ */
+const use = (identifier: ts.Identifier): boolean => {
+  const parent = identifier.parent;
+  const owned =
+    (ts.isPropertyAccessExpression(parent) ||
+      ts.isPropertyAssignment(parent) ||
+      ts.isPropertySignature(parent) ||
+      ts.isVariableDeclaration(parent) ||
+      ts.isParameter(parent) ||
+      ts.isFunctionDeclaration(parent) ||
+      ts.isBindingElement(parent)) &&
+    parent.name === identifier;
+  return (
+    !owned && !ts.isImportSpecifier(parent) && !ts.isNamespaceImport(parent)
+  );
+};
+
+/**
+ * Every binding a module uses, as code: not a comment, not literal text.
+ *
+ * By name, not by resolved symbol, which is the one thing this does not
+ * promise: a local or a parameter called the same as a message would read as a
+ * use of it. That direction loses a finding rather than inventing one, and
+ * resolving every identifier means building a program and a checker in a spec.
+ */
+const uses = (source: ts.SourceFile): Set<string> => {
+  const found = new Set<string>();
+  walk(source, (node) => {
+    if (ts.isIdentifier(node) && use(node)) found.add(node.text);
+  });
+  return found;
+};
 
 describe("title", () => {
   it("names the version that ran", () => {
@@ -143,20 +237,19 @@ describe("every message", () => {
     const all = modules();
     const own = all.find((module) => module.path === SUBJECT);
     expect(own, SUBJECT).toBeDefined();
-    const subject = own!.code;
 
     const said = new Set(
       all
         .filter((module) => module.path !== SUBJECT)
-        .flatMap((module) => reads(module.code))
+        .flatMap((module) => reads(module.source))
     );
+    // Nobody says it, so the one thing left that saves a message is another
+    // message here using it: a use is never the declaration it belongs to.
+    const here = uses(own!.source);
 
-    const unread = [...subject.matchAll(/^export (?:const|function) (\w+)/gm)]
-      .map((match) => match[1]!)
-      // Not said anywhere, and used nowhere in the module either: one
-      // occurrence is the declaration, so a second is what makes it composed
-      // into a message that is said.
-      .filter((name) => !said.has(name) && uses(subject, name) < 2);
+    const unread = exported(own!.source).filter(
+      (name) => !said.has(name) && !here.has(name)
+    );
 
     expect(unread).toEqual([]);
   });
