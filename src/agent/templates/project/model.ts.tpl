@@ -61,12 +61,13 @@ export function agentModel(
  * surfaces is the runtime's own message for a connection that died.
  * `isPlatformTransientError` is the predicate `agents` maintains for exactly
  * that family — connection lost, an isolate a deploy superseded, a storage
- * reset, and anything the platform itself flags retryable — and it reads an
- * `Error`, a string and a `cause` chain, which is every shape Think may hand a
- * classifier. Matching strings here instead would put a copy of that list in
- * this project, to go stale on the next runtime message. It applies whichever
- * model the agent runs, too: the model id is a value in `tuning.ts`, so an
- * agent pointed at another one tomorrow would otherwise lose this silently.
+ * reset, and anything the platform flags retryable short of an overload — and
+ * it reads an `Error`, a string and a `cause` chain alike, which is what a
+ * wrapper like `SqlError` makes necessary. Matching strings here instead would
+ * put a copy of that list in this project, to go stale on the next runtime
+ * message. And it applies whichever model the agent runs: the model id is a
+ * value in `tuning.ts`, so an agent pointed at another one tomorrow would
+ * otherwise lose this silently.
  *
  * **What it costs, accepted.** A *fatal* error whose message matches this
  * family is now retried: Think continues the turn up to its `chatRecovery`
