@@ -139,6 +139,35 @@ describe.each(variants())("$label", ({ spec }) => {
     expect(at(files, `${n.dir}/workflow.ts`)).toContain(`"${n.agentClass}"`);
   });
 
+  it("gives the task a step a follow-up can join", () => {
+    // `joins: true` is what records a join target, and core's `joinTask`
+    // answers `"closed"` without one — which the gatekeeper turns into a
+    // second task, so a message sent mid-turn is answered out of a fresh
+    // conversation. Held here because the pipeline is generated with one step:
+    // it is the only step that could declare it, and nothing in the generated
+    // project fails when it does not.
+    expect(at(files, `${n.dir}/workflow.ts`)).toContain("joins: true");
+  });
+
+  it("continues a cut turn in every class that runs one", () => {
+    // The halves are in different files — the helper in `src/model.ts`, the
+    // override on each class that runs a turn — and an absent override is
+    // valid TypeScript, so a class left out is a turn that fails where the
+    // rest continue and nothing says so. Why the turn is continued at all is
+    // `src/model.ts`'s to explain, and it does.
+    const model = at(files, "src/model.ts");
+    expect(model).toContain("export function transientChatError");
+    expect(model).toContain("isPlatformTransientError");
+    for (const path of [
+      `${n.dir}/agent.ts`,
+      ...(spec.subAgent ? [`${n.dir}/children.ts`] : [])
+    ]) {
+      expect(at(files, path), path).toContain(
+        "transientChatError(error) ?? super.classifyChatError(error)"
+      );
+    }
+  });
+
   it("wires ARTIFACTS all three ways core requires", () => {
     // A binding, an export and the route delegation in front of the A2A
     // handler. An agent that starts without all of them throws.

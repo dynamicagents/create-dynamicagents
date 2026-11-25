@@ -2,7 +2,7 @@ import type { ThinkModel } from "@cloudflare/think";
 import type { AgentPlugin, SubAgentSpec } from "@dynamicagents/core";
 import { SubAgent } from "@dynamicagents/core/subagent";
 import { z } from "zod";
-import { agentModel, turnTask } from "@/model";
+import { agentModel, transientChatError, turnTask } from "@/model";
 import { $CAMEL } from "./definition";
 import { plugins } from "./plugins";
 import { GENERAL_SOUL } from "./soul";
@@ -37,6 +37,15 @@ const GENERAL: SubAgentSpec<{ task: string }> = {
 
 export class $CHILD_CLASS extends SubAgent<Env> {
   static override spec = GENERAL as SubAgentSpec<never, never>;
+
+  /**
+   * The same widening as the parent's, for the same reason: a class that left
+   * this out would fail a turn its sibling continues, and nothing would say so.
+   * `src/model.ts` holds the why, and what it costs.
+   */
+  override classifyChatError(error: unknown) {
+    return transientChatError(error) ?? super.classifyChatError(error);
+  }
 
   override getModel(): ThinkModel {
     return agentModel(

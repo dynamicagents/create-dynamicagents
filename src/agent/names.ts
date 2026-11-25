@@ -127,6 +127,7 @@ export const COLLIDES = new Map([
   ["plugins", "plugins"],
   ["step", "StepAgent"],
   ["task", "TaskHost"],
+  ["transient-chat-error", "transientChatError"],
   ["turn-task", "turnTask"]
 ]);
 
