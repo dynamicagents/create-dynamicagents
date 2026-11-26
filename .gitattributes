@@ -19,3 +19,5 @@
 *.jsonc.tpl linguist-language=JSON-with-Comments
 *.json.tpl linguist-language=JSON
 *.js.tpl linguist-language=JavaScript
+*.mjs.tpl linguist-language=JavaScript
+Dockerfile.tpl linguist-language=Dockerfile

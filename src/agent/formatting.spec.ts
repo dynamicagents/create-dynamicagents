@@ -11,7 +11,7 @@ import { specs, variants } from "./fixtures";
  * project a failing check on its first run. Prettier is a devDependency and
  * cannot be imported at runtime — nothing a user installs would have it — so
  * the layout rules the templates follow are implemented in
- * `./templates/text.ts` and held to the real prettier here.
+ * `./templates/shared/text.ts` and held to the real prettier here.
  *
  * The sweeps matter as much as the cases: the rules are about **width**, and a
  * tenant id or a description one character either side of the print width is

@@ -16,8 +16,10 @@ import {
   noTerminal,
   notEmpty,
   notInstalled,
+  nextStepsContainer,
   otherModelLabel,
-  outroLine,
+  NEXT_STEPS,
+  OUTRO,
   tree,
   unknownBlueprint,
   unknownKind,
@@ -269,6 +271,27 @@ describe("finishByHand", () => {
     expect(text).toContain("npm install");
     expect(text).toContain("npx wrangler types");
   });
+
+  it("ends with the format every install runs, after the install", () => {
+    const text = finishByHand("support", "npm install failed");
+    expect(text.indexOf("npm run format")).toBeGreaterThan(
+      text.indexOf("npm install")
+    );
+  });
+});
+
+describe("nextStepsContainer", () => {
+  it("says what only the operator can supply, and the tenant to register", () => {
+    const text = nextStepsContainer("coordinator", "pr-bot");
+    expect(text).toContain("cd coordinator");
+    expect(text).toContain(".env.example");
+    expect(text).toContain("bucket");
+    expect(text).toContain("`pr-bot`");
+    // Its soul is written already, so it is not handed back as homework.
+    expect(text).not.toContain("soul.ts");
+    // It works on no repository, so it asks for no GitHub token.
+    expect(text).not.toContain("GitHub");
+  });
 });
 
 describe("notInstalled", () => {
@@ -278,6 +301,15 @@ describe("notInstalled", () => {
     const text = notInstalled("Support");
     expect(text).toContain("Support");
     expect(text).not.toMatch(/ready/i);
-    expect(outroLine("Support")).toMatch(/ready/i);
+    expect(OUTRO.generic?.("Support")).toMatch(/ready/i);
+  });
+});
+
+describe("what comes after the install, per blueprint", () => {
+  it("has next steps and an outro for every blueprint the menu offers", () => {
+    for (const blueprint of BLUEPRINTS) {
+      expect(NEXT_STEPS[blueprint.value], blueprint.value).toBeDefined();
+      expect(OUTRO[blueprint.value], blueprint.value).toBeDefined();
+    }
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { projectFiles } from "./files";
 import { variants } from "./fixtures";
 import type { AgentSpec } from "./spec";
+import { hasGeneral } from "./spec";
 import { RUNTIME, TRAIN } from "../train";
 
 /**
@@ -58,7 +59,7 @@ describe.each(variants())("$label", ({ spec }) => {
     expect("@dynamicagents/plugins" in deps(spec)).toBe(
       spec.capabilities.length > 0
     );
-    expect("zod" in deps(spec)).toBe(spec.subAgent);
+    expect("zod" in deps(spec)).toBe(hasGeneral(spec));
   });
 
   it("keeps both dependency maps sorted, as npm would", () => {

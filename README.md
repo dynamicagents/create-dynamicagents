@@ -34,6 +34,29 @@ Then `npm run keygen`, fill in `.env`, and `npm run deploy`. The generated
 `README.md` carries the rest, and its `AGENTS.md` carries the rules — including
 how to bring a second generated agent into the same Worker later.
 
+### Which agent
+
+| blueprint          | what it writes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `generic`          | A delegating assistant on a Workers AI model, with an optional research sub-agent, `general`, and the browser. Composed from your answers.                                                                                                                                                                                                                                                                                                                                                                 |
+| `claude-container` | An agent that hands tasks to Claude Code sessions in a sandbox container and shares the files they make as links. Its sub-agent is the Claude Code session, `claude_code`, which it always has. It asks the generic blueprint's questions except the sub-agent one: its model, and the browser (`--browser`). Its tenant id and description have defaults, and its Claude Code session's model and effort are lines of its own `src/config.ts`, each with a comment saying where to find the alternatives. |
+
+`claude-container` needs Cloudflare Containers and at least one `claude
+setup-token` credential; the generated `.env.example` says how to scope it. A
+pull-request coordinator built on it, which carries a change through a GitHub
+repository to a pull request ready to merge, is one of the Dynamic Agents
+examples rather than a blueprint here.
+
+Every install ends by running the project's own prettier over the files it
+wrote, and nothing else in the directory. A generic project is written
+formatted, so that changes nothing there; a `claude-container` project's files
+are laid out for the tenant id they were written with, and this re-lays them out
+for yours.
+
+```bash
+npm create dynamicagents@latest agent claude-container -- --yes
+```
+
 ## Answering without the questions
 
 ```bash
@@ -43,18 +66,18 @@ npm create dynamicagents@latest agent generic support -- \
 
 The `--` is npm's, not ours: without it, npm keeps the flags for itself.
 
-| flag            | what it answers                                                        |
-| --------------- | ---------------------------------------------------------------------- |
-| `--name`        | The tenant id. Every class, binding and workflow name derives from it. |
-| `--description` | One line for the card, and the first line of the soul.                 |
-| `--dir`         | Where to write it. Defaults to the name.                               |
-| `--model`       | A Workers AI model id. Defaults to one that calls tools reliably.      |
-| `--no-subagent` | Leave out the sub-agent it hands research to.                          |
-| `--browser`     | Install the browser plugin, its binding and its skill.                 |
-| `--yes`         | Do not ask for confirmation.                                           |
-| `--dry-run`     | Print what would be written, and write nothing.                        |
-| `--help`        | Usage, both ways in, and every flag. Also `-h`.                        |
-| `--version`     | The version that would run. Also `-v`.                                 |
+| flag            | what it answers                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------ |
+| `--name`        | The tenant id. Every class, binding and workflow name derives from it.                                 |
+| `--description` | One line for the agent's card, and for `generic` the first line of its soul.                           |
+| `--dir`         | Where to write it. Defaults to the name.                                                               |
+| `--model`       | A Workers AI model id. Defaults to one that calls tools reliably.                                      |
+| `--no-subagent` | `generic` only: leave out `general`, the sub-agent it hands research to.                               |
+| `--browser`     | Install the browser plugin, its bindings and, on a `generic` card, its skill; `--no-browser` for none. |
+| `--yes`         | Do not ask for confirmation.                                                                           |
+| `--dry-run`     | Print what would be written, and write nothing.                                                        |
+| `--help`        | Usage, both ways in, and every flag. Also `-h`.                                                        |
+| `--version`     | The version that would run. Also `-v`.                                                                 |
 
 The directory may already exist as long as it is empty. These do not count as
 content, so a repository you made with `git init` first is fine, as is one an

@@ -67,6 +67,23 @@ export const RUNTIME = {
 } as const;
 
 /**
+ * What only a container blueprint adds: the sandbox's own package and the
+ * bundler its image's daemon is built with.
+ *
+ * `@cloudflare/sandbox` is **exact**, and the `Dockerfile` the blueprint writes
+ * is why: its image copies `sandbox-shim` from `cloudflare/sandbox` at a tag,
+ * the Worker drives that shim through the installed package, and the generated
+ * `scripts/verify-container-env.mjs` fails `npm run check` unless the two are
+ * the same version. A range would resolve to whatever is newest on the day of
+ * the install, and hand a new project a failing check the day after a release.
+ * It moves with the tag in `templates/claude-container/project/Dockerfile.tpl`.
+ */
+export const CONTAINER = {
+  "@cloudflare/sandbox": "1.0.3",
+  esbuild: "^0.28.2"
+} as const;
+
+/**
  * What a generated project builds, lints, formats and tests with.
  *
  * `@types/node` is the major {@link NODE_ENGINE} names, never a newer one: the
@@ -171,7 +188,7 @@ export const NODE_VERSION = "24";
  * model stops calling them. Choosing another is one question in the CLI; the
  * catalogue is at {@link MODELS_URL}.
  */
-export const DEFAULT_MODEL_ID = "@cf/zai-org/glm-5.3-flash";
+export const DEFAULT_MODEL_ID = "@cf/zai-org/glm-5.3";
 
 /** Where every Workers AI model id comes from. */
 export const MODELS_URL = "https://developers.cloudflare.com/ai/models/";

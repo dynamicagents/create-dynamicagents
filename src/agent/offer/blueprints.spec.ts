@@ -2,8 +2,20 @@ import { describe, expect, it } from "vitest";
 import { BLUEPRINTS, blueprintOf } from "./blueprints";
 
 describe("BLUEPRINTS", () => {
-  it("offers the generic agent", () => {
-    expect(BLUEPRINTS.map((blueprint) => blueprint.value)).toEqual(["generic"]);
+  it("offers the generic agent first, then claude-container", () => {
+    expect(BLUEPRINTS.map((blueprint) => blueprint.value)).toEqual([
+      "generic",
+      "claude-container"
+    ]);
+  });
+
+  it("gives a blueprint written as it stands an identity of its own", () => {
+    // A blueprint with an agent of its own has a name of its own, and a
+    // default for its tenant and description is what lets `--yes` alone write it.
+    for (const blueprint of BLUEPRINTS.filter((entry) => entry.defaults)) {
+      expect(blueprint.defaults?.tenant, blueprint.value).toBe(blueprint.value);
+      expect(blueprint.defaults?.description, blueprint.value).not.toBe("");
+    }
   });
 
   it("gives every entry a label, a hint and what it is", () => {

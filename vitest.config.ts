@@ -32,7 +32,7 @@ export default defineConfig({
      * stated rather than inferred.
      *
      * **What keeps a generated project's spec out is the extension, not this
-     * line.** `templates/test/soul.spec.ts.tpl` is a spec of the project this
+     * line.** `templates/generic/test/soul.spec.ts.tpl` is a spec of the project this
      * CLI writes — it imports `@dynamicagents/core` and would fail here — and
      * measured, vitest's default glob never matches it: the glob wants a name
      * *ending* in `.spec.ts`, and that one ends in `.tpl`. Collection is the

@@ -1,0 +1,10 @@
+# The `Dockerfile`'s build context is this directory — wrangler resolves it
+# as the Dockerfile's parent unless `image_build_context` says otherwise — so every
+# `wrangler deploy` would otherwise hand the daemon ~450 MB of node_modules and
+# dist before running a single instruction.
+#
+# So everything is ignored, and exactly what a COPY needs is let back in: the
+# sandbox daemon the `Dockerfile` copies, which `scripts/build-daemon.mjs`
+# writes before the build. Do not delete this file.
+*
+!container/daemon.mjs

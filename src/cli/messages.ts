@@ -65,7 +65,7 @@ export const FLAGS: readonly Flag[] = [
   {
     key: "description",
     spelled: "--description <line>",
-    answers: "one line for its card, and its soul's first line"
+    answers: "one line for its card (and a generic soul)"
   },
   {
     key: "dir",
@@ -80,12 +80,12 @@ export const FLAGS: readonly Flag[] = [
   {
     key: "subagent",
     spelled: "--no-subagent",
-    answers: "leave out the sub-agent it hands research to"
+    answers: "generic: leave out its research sub-agent"
   },
   {
     key: "browser",
     spelled: "--browser",
-    answers: "install the browser plugin, its binding, its skill"
+    answers: "the browser plugin, its bindings and skill"
   },
   { key: "yes", spelled: "--yes", answers: "do not ask for confirmation" },
   {
@@ -310,14 +310,55 @@ export function nextSteps(dir: string, tenant: string): string {
   ].join("\n");
 }
 
+/**
+ * What to do once a `claude-container` project is written. Its soul is written
+ * already; what nobody else can supply is the credentials and the bucket.
+ */
+export function nextStepsContainer(dir: string, tenant: string): string {
+  return [
+    `cd ${dir}`,
+    "npm run keygen            # one signing key, into .env",
+    "                          # then a Claude credential:",
+    "                          # .env.example says what each one is",
+    "npm run check             # types, format, lint, typecheck, image pins",
+    "npm test                  # the suite, in real workerd",
+    "",
+    "Before the first deploy, create the bucket wrangler.jsonc names for the",
+    "sandboxes' backups, then `npm run deploy` and register the tenant",
+    `\`${tenant}\` with your gatekeeper at https://<your-worker>/a2a`,
+    "",
+    "README.md has the rest; AGENTS.md has the rules."
+  ].join("\n");
+}
+
+/** Why `--subagent` or `--no-subagent` was refused: the sub-agent is what the blueprint is for. */
+export const fixedSubAgent = (label: string, name: string): string =>
+  `${label} always has its sub-agent, \`${name}\`: handing it work is what the agent is for, so it takes no --subagent or --no-subagent.`;
+
 export const installing = "Installing";
 
 export const installed = "Installed";
 
 export const wrote = (dir: string): string => `Wrote ${dir}`;
 
-export const outroLine = (name: string): string =>
-  `${name} is ready. Write its soul, then deploy it.`;
+/**
+ * What each blueprint's project needs next, by blueprint: a generic agent's
+ * soul is the developer's to write, while a claude-container's is written and
+ * its credentials are not. `messages.spec.ts` holds every blueprint to having
+ * both.
+ */
+export const NEXT_STEPS: Readonly<
+  Record<string, (dir: string, tenant: string) => string>
+> = {
+  generic: (dir, tenant) => nextSteps(dir, tenant),
+  "claude-container": (dir, tenant) => nextStepsContainer(dir, tenant)
+};
+
+export const OUTRO: Readonly<Record<string, (name: string) => string>> = {
+  generic: (name) => `${name} is ready. Write its soul, then deploy it.`,
+  "claude-container": (name) =>
+    `${name} is ready. Fill in .env, then deploy it.`
+};
 
 export const dryRun = "Nothing was written: this was a dry run.";
 
@@ -354,7 +395,10 @@ export const describeTooLong = (): string =>
 export const describeOneLine = (): string =>
   "One line means one line: no line breaks. It goes on the agent's card and into its source. Say the rest in its soul once it exists.";
 
-/** An install that failed leaves a complete project, so say how to finish it. */
+/**
+ * An install that failed leaves a complete project, so say how to finish it:
+ * the same three steps `installProject` runs.
+ */
 export const finishByHand = (dir: string, problem: string): string =>
   [
     problem,
@@ -363,11 +407,12 @@ export const finishByHand = (dir: string, problem: string): string =>
     "",
     `  cd ${dir}`,
     "  npm install",
-    "  npx wrangler types"
+    "  npx wrangler types",
+    "  npm run format"
   ].join("\n");
 
 /**
- * The last line after an install that failed, in place of {@link outroLine}.
+ * The last line after an install that failed, in place of an {@link OUTRO}.
  *
  * Not "ready": every next step needs the dependencies that did not arrive, and
  * a success outro under a failure is how somebody deploys a project that never

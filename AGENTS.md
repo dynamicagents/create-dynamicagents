@@ -57,19 +57,66 @@ sets the rules:
 ## What it writes, and why that is pinned
 
 `src/agent/` holds the whole generator: `files.ts` lists a project as data, and
-`templates/` is one pure function per generated file. There is nothing to derive
+`templates/` holds what each blueprint writes. There is nothing to derive
 a scaffold from at run time — `starter` is archived, and was never published —
 so this package carries the code it writes, prompt copy included.
 
 Its root is what something outside reaches for: `spec.ts` and `names.ts` are the
 vocabulary every layer reads, `files.ts` is the project as data, and every spec
 there is a spec on what `projectFiles` returns, which is why they sit beside it.
-Below it, `offer/` is the two menus the CLI puts in front of somebody — nothing
-a template writes reads them — and `templates/` is what a template _reads_
-(`text.ts`, `render.ts`, `dependencies.ts`, `merge-notes.ts`), with
-`templates/agent|project|test/` the files a template _writes_ — each one a
-**pair**: the `.tpl` file holding the text verbatim, and the module that binds
-its variation.
+Below it, `offer/` is the menus the CLI puts in front of somebody (nothing a
+template writes reads them), and `templates/` is one directory per blueprint
+beside `templates/shared/`. `shared/` is what a template _reads_ (`text.ts`,
+`render.ts`, `retenant.ts`, `dependencies.ts`, `merge-notes.ts`) and the files
+every blueprint writes alike (the toolchain dotfiles and the host manifest).
+Each blueprint's directory holds the files it _writes_ and the `files.ts` that
+puts them together, which `src/agent/files.ts` picks by blueprint. In
+`templates/generic/agent|project|test/` each file is a **pair**: the `.tpl` file
+holding the text verbatim, and the module that binds its variation.
+
+### A blueprint ported whole
+
+`templates/claude-container/` is the exception to the pairs above, and it is one
+on purpose. Its files are working files of a real project whose tenant is
+`claude-container`, held byte for byte apart from the few markers below, so
+the project can be run, diffed and edited as one. `templates/shared/retenant.ts`
+swaps the tenant's spellings for the one a user chose, and the pins `src/train.ts`
+owns are the only other variation inside a file besides the answers it shares
+with the generic blueprint:
+
+- its turn's model, as the `modelId` line of `src/config.ts`. Its compaction
+  model stays the template's full-size one, which that file's own comment says
+  a flash model times out in at this agent's compaction size;
+- its card's description, as the `description` line of its `manifest.ts`. Its
+  soul is its operating rules and stays as written;
+- the browser, as a `$when browser` region of the files that hold it, and the
+  `$BROWSER_TOO` token in its README and AGENTS.md.
+
+The model and the description are replaced after the tenant rename, so an
+answer is never renamed. Four of its files (`wrangler.jsonc`, `plugins.ts`,
+`README.md`, `AGENTS.md`) go through `render()` for those markers, which throws
+on any other `$UPPER` text, so a re-sync that brings one in has to bind or
+reword it. Every file is otherwise a working file of the default project. Its
+Claude Code session's model and effort are not asked for: they are lines of that
+`src/config.ts`, each commented with where to find the alternatives.
+
+The agent hands a task to a Claude Code session in a scratchpad and shares what
+it makes as artifact links. Anything more specific, such as a coordinator that
+carries a change through a GitHub repository to a pull request, is a concrete
+agent built on it and belongs in the Dynamic Agents examples, not here: this
+package writes the starting points.
+
+That costs one of the rules below, and the cost is stated rather than hidden:
+**its output is already formatted only for its own tenant id.** Another id
+moves where a line crosses the print width, in code nobody here wrote for a
+`$TOKEN`, so every install ends with the project's own prettier over the files
+it wrote, the last step of `installProject`. That is never `.`, because the
+directory may hold a user's `.vscode` or `.idea`, which a write leaves where they
+are. `finishByHand` lists `npm run format` when the install does not finish. A generic project is written formatted, so the step changes nothing
+there, and `formatting.spec.ts` still holds that output to being formatted as
+written. `src/agent/claude-container.spec.ts` holds the rest: the file list, no spelling of the template's tenant left behind, the
+wiring between files, and every file already formatted for `claude-container`
+itself.
 
 ### A generated file is a real file
 
@@ -80,7 +127,7 @@ backticked code spans and JSONC full of comments, and as template literals in
 prettier, no editor feedback and diffs that showed escapes rather than content.
 esbuild's `text` loader puts a `.tpl` into the bundle (`scripts/build.mjs`);
 three places have to agree that a `.tpl` is text and all three say so — esbuild
-there, vite in `vitest.config.ts`, and `tsc` via `templates/tpl.d.ts`. A `.tpl`
+there, vite in `vitest.config.ts`, and `tsc` via `templates/shared/tpl.d.ts`. A `.tpl`
 with no loader is a build error, never a silent inclusion, which is why the
 extension is its own.
 
@@ -92,7 +139,7 @@ typechecks it, lints it or objects to the extension on its import. It costs the
 second of which is load-bearing, because the loader ships what the checkout
 holds and a CRLF clone would write CRLF into every generated project.
 
-`templates/render.ts` is how a template varies, and the three forms are written
+`templates/shared/render.ts` is how a template varies, and the three forms are written
 so that **a template stays valid in the language it writes** — which is what
 lets prettier run over it:
 
@@ -174,16 +221,19 @@ Two rules follow, and breaking either is invisible until somebody's first run:
 - **Generated output is already formatted.** The first half of a generated
   project's own `npm run check` is a prettier check, and prettier cannot be
   imported at run time — so the layout rules live in
-  `src/agent/templates/text.ts`, and `src/agent/formatting.spec.ts` holds them
+  `src/agent/templates/shared/text.ts`, and `src/agent/formatting.spec.ts` holds them
   to the real prettier, sweeping lengths across the print width because every
   one of those rules is about width. `npm run check` now runs prettier over the
   `.tpl` files too, which is the fast feedback loop; `formatting.spec.ts` over
   the _rendered_ output is still the guarantee, since a `.tpl` is only ever one
   of the shapes it renders into.
-- **A capability arrives whole** — the line in `plugins.ts`, the binding in
-  `wrangler.jsonc`, the skill on the card. Core checks a plugin's `requires`
-  when the agent starts, so two out of three is an agent that throws on its
-  first request.
+- **A capability arrives whole**: the line in `plugins.ts` and the binding in
+  `wrangler.jsonc`, which core holds together through the plugin's `requires`
+  when the agent starts, so one without the other is an agent that throws on
+  its first request; and the skill on the card wherever the blueprint's card
+  advertises what its tools do. The generic card does; `claude-container`'s
+  advertises the task, not the tools its parent checks it with, so its browser
+  adds no skill (`src/agent/offer/capabilities.ts`).
 - **A flag arrives whole** too, on this side of the line — the entry in
   `src/cli/args.ts`'s `OPTIONS`, the line in `src/cli/messages.ts`'s `FLAGS`,
   the row in `README.md`. One without the others is a flag that works and

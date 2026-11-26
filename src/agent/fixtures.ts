@@ -25,16 +25,22 @@ const base = (tenant: string): AgentSpec => ({
   name: displayName(tenant),
   description: "Answers product questions from the handbook.",
   blueprint: "generic",
-  subAgent: true,
+  subAgent: "general",
   capabilities: [],
   modelId: DEFAULT_MODEL_ID
 });
+
+/** A spec with no sub-agent at all. */
+const withoutSubAgent = (spec: AgentSpec): AgentSpec => {
+  const { subAgent: _, ...rest } = spec;
+  return rest;
+};
 
 export const specs = {
   /** Everything on: the sub-agent and every capability. */
   full: { ...base("support"), capabilities: ["browser"] } as AgentSpec,
   /** Nothing but the agent itself. */
-  bare: { ...base("support"), subAgent: false } as AgentSpec,
+  bare: withoutSubAgent(base("support")),
   /** A multi-word tenant id, which every derived name has to handle. */
   multiWord: base("release-notes")
 } as const;

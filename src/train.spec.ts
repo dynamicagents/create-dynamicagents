@@ -105,4 +105,12 @@ describe("the fixtures the specs generate from", () => {
     expect(source).not.toMatch(/["'`]@cf\//);
     expect(DEFAULT_MODEL_ID).toMatch(/^@cf\//);
   });
+
+  // Pinned as a literal because every other spec reads the constant: moving it
+  // changes every generic project's turn and compaction model and has to match
+  // the line claude-container's template names, so it is a decision a diff
+  // should show. `glm-5.3-flash` was retired by Workers AI on 2026-11-20.
+  it("is the model the train decided on", () => {
+    expect(DEFAULT_MODEL_ID).toBe("@cf/zai-org/glm-5.3");
+  });
 });

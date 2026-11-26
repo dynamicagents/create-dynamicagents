@@ -1,0 +1,236 @@
+// Type-only, so nothing reaches a bundle. It is what makes a mistyped or renamed
+// session field fail at `tsc`: a key a plugin type does not declare is an error
+// written inline and no error at all through a spread, so the constant below is
+// checked with `as const satisfies`, which checks the shape while keeping the
+// literal types.
+import type { ClaudeCodeConfig } from "@dynamicagents/plugins/claude-code";
+import type { SandboxObjectConfig } from "@dynamicagents/plugins/sandbox";
+import type { Reconcile } from "@dynamicagents/core/workflow";
+
+/**
+ * Every value this Worker tunes, in one file.
+ *
+ * Plain exported values rather than anything resolved at import time: on
+ * Workers there is no `env` at module scope, and the classes read these when an
+ * object runs. Core ships no numbers, so each one here is chosen.
+ */
+
+/** What one agent tunes: its model, and when its conversation compacts. */
+export interface AgentTuning {
+  /**
+   * The turn's model: a `@cf/...` Workers AI id, or a `"<provider>/<model>"`
+   * slug from AI Gateway's provider catalog. `src/model.ts` reads which it is
+   * from the id itself. Either way it must call tools reliably over a long
+   * context, because a turn ends when the model stops calling them.
+   *
+   * Both kinds are listed, with the spelling to use, in Cloudflare's model
+   * catalog: https://developers.cloudflare.com/ai/models/. Spell a catalog slug
+   * the catalog's way (`anthropic/claude-sonnet-5.5`), not the vendor's. A slug
+   * is billed through AI Gateway, so the `default` gateway needs that
+   * provider's key stored on it (alias `default`) or credits; a Workers AI id
+   * needs neither. An `openai/*` model also reads `reasoningEffort` below.
+   */
+  modelId: string;
+  /**
+   * The model compaction summarizes with, and the turn waits for it. Either
+   * form `modelId` takes, read the same way.
+   *
+   * Among the Workers AI ids: flash where the prompt it summarizes stays
+   * small, the full-size model where it does not, because flash has timed out
+   * (`408` / `3046`, after ~235 s) on every summary of a ~275 KB conversation,
+   * while `@cf/zai-org/glm-5.3` reads a 111k-token uncached prompt in ~34 s —
+   * and answers a share of calls with `429` / `3040` "Capacity temporarily
+   * exceeded".
+   */
+  compactionModelId: string;
+  /** Compact once the conversation's estimate crosses this. */
+  compactAfterTokens: number;
+  /** The recent tail compaction keeps verbatim. */
+  keepRecentTokens: number;
+  /**
+   * The reasoning effort an `openai/*` `modelId` runs at, sent on each turn as
+   * `providerOptions.openai.reasoningEffort`. Unset leaves OpenAI's default.
+   */
+  reasoningEffort?: string;
+}
+
+/**
+ * `claude-container`'s tuning.
+ *
+ * The parent runs on Workers AI, through the `AI` binding: it delegates and
+ * writes no code, so what it has to be good at is calling tools over a long
+ * context, and a Workers AI model needs no AI Gateway balance. A
+ * `"<provider>/<model>"` slug from AI Gateway's catalog works here too
+ * (`src/model.ts` reads which from the id), billed to the account's balance.
+ *
+ * Wider than a chat agent's, for one reason: what the model can no longer see it
+ * pays a container round trip to rediscover. Compaction is also when Think
+ * re-renders the system prompt, so this number is how stale a long
+ * conversation's soul and memory can get.
+ */
+export const CLAUDE_CONTAINER: AgentTuning = {
+  modelId: "@cf/zai-org/glm-5.3",
+  compactionModelId: "@cf/zai-org/glm-5.3",
+  compactAfterTokens: 100_000,
+  keepRecentTokens: 12_000
+};
+
+/**
+ * The size a sandbox's container starts at — 2 vCPU, 6 GiB, 8 GB
+ * disk — and the base of {@link CLAUDE_CONTAINER_SANDBOX_INSTANCE}. Asked for
+ * on every start, so a change reaches each sandbox at its next start.
+ *
+ * Deliberately not `lite`, the runtime's default: that is a size for trying
+ * containers and cannot build a real project.
+ *
+ * The CPU is the exposure, and it was measured: on standard-1 (1/2 vCPU,
+ * 4 GiB) a one-line README change took 59 minutes, of which 52 were spent at
+ * **0.0% of Worker CPU** — the Worker was asleep awaiting this container the
+ * whole time. `npm run check` on the target repo is five sequential tools
+ * including two full `tsc` runs; it is recorded at 28 s in
+ * `src/workspace/install-plan.ts` and was observed taking 3-5 minutes here.
+ *
+ * What wants the second core is the build itself: it is what the measurement
+ * above is about, and the work is inside the container where the Worker cannot
+ * help.
+ *
+ * It is not the more expensive choice it looks like. Cloudflare bills memory and
+ * disk on *provisioned* resources for as long as an instance runs, but CPU on
+ * *active usage* — so on CPU-bound work a second core costs the same vCPU-
+ * seconds over less wall-clock, and the memory-seconds fall with the duration.
+ * Verify that against the account's container metrics rather than trusting it.
+ *
+ * Memory is what to trim, because it bills for the whole run. Observed peaks
+ * are ~5 GiB and ~4 GB of disk, so 6 GiB is thin headroom: a sandbox killed
+ * for memory means raise `memoryMib` first. More cores are not free either —
+ * a custom size needs at least 3 GiB per vCPU.
+ */
+export const SANDBOX_INSTANCE: SandboxObjectConfig["instance"] = {
+  vcpu: 2,
+  memoryMib: 6144,
+  diskMb: 8000
+};
+
+/**
+ * `claude-container`'s size, which is {@link SANDBOX_INSTANCE}'s. It keeps a
+ * constant of its own because its workload differs, so this is where it diverges
+ * if it has to.
+ *
+ * Cores are the only dimension that would buy it anything, and they are what it
+ * cannot have cheaply. About half of a writing session's wall-clock is the
+ * target's checks and tests, one process each, which no number of containers
+ * speeds up: the same suite took ~200 s at 2 vCPU and 80 s on a 4-vCPU CI
+ * runner. Against that, every added core bills memory for the whole run at the
+ * 3 GiB-per-vCPU floor above, and the fan-out multiplies it — the containers
+ * block in `wrangler.jsonc` carries that arithmetic.
+ */
+export const CLAUDE_CONTAINER_SANDBOX_INSTANCE: SandboxObjectConfig["instance"] =
+  SANDBOX_INSTANCE;
+
+/** The CLI adapter the sandbox image's daemon serves (`src/sandbox-daemon.ts`), which each sandbox names. */
+export const SANDBOX_ADAPTER = "da-claude";
+
+/**
+ * How long a sandbox nobody uses is kept: then the weekly sweep empties it,
+ * its backups and any commits in it that were never pushed with it. The parent
+ * is told this number, so a worktree's work is pushed or let go knowingly.
+ */
+export const SANDBOX_RECLAIM_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * How long a task's workflow waits for its job's next event before it pulls
+ * the agent and the host for what it has not read: the delay an event the
+ * platform accepts and never delivers costs, at worst `maxMs`. A wait that
+ * finds nothing doubles the next, so a question open for a week (the
+ * gatekeeper's expiry) costs about 340 wakes, two steps each, of the 10,000 a
+ * Workflow instance holds. Every tenant's pipeline waits by it.
+ */
+export const TASK_RECONCILE: Reconcile = {
+  afterMs: 5 * 60_000,
+  maxMs: 30 * 60_000
+};
+
+/**
+ * What bounds one Claude Code session, and **this is the whole list**.
+ *
+ * There is no spend cap, deliberately: an estimate in dollars is a guess about
+ * a subscription bucket nobody can read, and the egress gateway reads the
+ * bucket directly, rotating credentials when Anthropic says one is spent. That
+ * bounds the deployment, not a session. So `timeoutMs` is the ceiling, and the
+ * sub-agent stops the session at it.
+ */
+export const CLAUDE_CODE_SESSION = {
+  /**
+   * Opus 5, deliberately: reaching it on a subscription credential is the whole
+   * reason this agent exists, so spending the bucket on something cheaper would
+   * be paying the setup cost and declining the return.
+   *
+   * A 5-hour bucket is roughly $10 of Opus-equivalent and a substantial coding
+   * session is plausibly $1-5, so expect two to four per bucket per credential.
+   * `claude-sonnet-5` stretches that several times further if a deployment would
+   * rather have volume.
+   *
+   * Any id or alias Claude Code's own `--model` takes works here: see
+   * https://code.claude.com/docs/en/model-config. The ones
+   * `@dynamicagents/plugins/claude-code` verified on a subscription credential,
+   * for the Claude Code version `wrangler.jsonc` pins, are in its README.
+   */
+  model: "claude-opus-5",
+
+  /**
+   * `xhigh`, the level above Opus 5's own default of `high`. Same argument as
+   * the model: the bucket is spent either way once a session starts, and what
+   * costs a deployment real time is not an expensive session but a cheap one
+   * that half-finishes and leaves a checkout somebody has to read before the
+   * next can use it.
+   *
+   * It is bought per turn, so it compounds over a session, at a multiple
+   * `@dynamicagents/plugins/claude-code` documents. Drop to `high` for volume,
+   * the way `claude-sonnet-5` is for the model.
+   *
+   * Spelled as a level the CLI knows, because one it does not know is **warned
+   * about on stderr and ignored**. `EffortLevel` is the type that catches that:
+   * `low`, `medium`, `high`, `xhigh` or `max`.
+   */
+  effort: "xhigh",
+
+  /**
+   * Three hours, and **this is the ceiling on a session**: one that has
+   * stopped making progress, not a budget for one that is. The sandbox keeps
+   * its container up while a run is open, so nothing else stops a long one.
+   */
+  timeoutMs: 3 * 60 * 60_000,
+
+  /**
+   * Caps on Claude Code's own subagent tree, and advisory rather than enforced:
+   * that tree is invisible to this Worker and multiplies whatever they say.
+   * `timeoutMs` is what actually stops a run.
+   *
+   * No turn ceiling sits beside them because there is none to set —
+   * `@dynamicagents/plugins/claude-code` does not pass `--max-turns` at all, and
+   * its README carries the reason.
+   */
+  maxSubagentDepth: 1,
+  maxConcurrentSubagents: 4,
+
+  /**
+   * How the session answers its own permission prompts. The plugin already
+   * defaults to this value; the line is here because the block above claims to
+   * be **the whole list**, and a setting this consequential resolving out of
+   * sight would make that claim false.
+   *
+   * `bypassPermissions` because `claude -p` is headless: there is nobody to
+   * answer a prompt, so any mode that would ask **auto-denies** instead. On the
+   * CLI's default a session reads the repository perfectly, cannot change one
+   * byte of it, and reports prose that reads like considered reluctance rather
+   * than a blocked tool — it exits 0 and the run is recorded as completed.
+   *
+   * The container is what makes bypassing acceptable rather than merely
+   * convenient: it holds no credential — the egress gateway swaps the real one
+   * in on the Worker side — and `npm ci` already runs whatever `postinstall` a
+   * cloned repository ships. Containment is the credential swap.
+   */
+  permissionMode: "bypassPermissions"
+  // The credentials are the host's to answer, not a setting: see
+  // `src/agents/claude-container/claude-code.ts`.
+} as const satisfies Omit<ClaudeCodeConfig, "credentials">;
