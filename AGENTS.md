@@ -81,8 +81,8 @@ it lives in the workspace's `AGENTS.md` and not here.
 
 `src/agent/` holds the whole generator: `files.ts` lists a project as data, and
 `templates/` is one pure function per generated file. There is nothing to derive
-a scaffold from at run time — `starter` is archived, and was never published —
-so this package carries the code it writes, prompt copy included.
+a scaffold from at run time: `starter` was never published, so this package
+carries the code it writes, prompt copy included.
 
 Its root is what something outside reaches for: `spec.ts` and `names.ts` are the
 vocabulary every layer reads, `files.ts` is the project as data, and every spec
