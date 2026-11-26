@@ -13,23 +13,22 @@ import { gitIdentity } from "./git-identity";
 const INSTALL_GATE_MS = 180_000;
 
 /**
- * What a read-only parent is told about the checkout, in place of the
- * `computer` plugin's own block — which describes a shell, a writer and an
+ * What a read-only parent is told about the scratchpad, in place of the
+ * `computer` plugin's own block, which describes a shell, a writer and an
  * editor the parent does not have. A model told it has a shell spends a turn
  * discovering it does not, and the natural next move, doing the work itself, is
  * the one thing the split exists to prevent.
  *
- * Here rather than in either agent's `plugins.ts` because both say it: two
- * copies drift, and the drift is invisible. What a sub-agent is told about
+ * It names only what is there: a scratchpad the sessions made, with no checkout
+ * and no guarantee of installed dependencies. What a sub-agent is told about
  * working in the tree belongs to `@dynamicagents/plugins/computer`.
  *
  * `delegate` is the sentence that differs, naming who does the work.
  */
 export function parentWorkspaceContext(delegate: string): string {
   return [
-    `You can read the checkout ${delegate} work in, but not change it: \`read\` a file, \`ls\` a directory, \`find\` files by name, and \`grep\` their contents.`,
-    "Use these to check a report against what is actually on disk — read the file it says it changed. You cannot run commands, write, edit or delete; that is what delegation is for.",
-    "`node_modules` is on the container's disk beside the checkout, and these tools leave it out. A sub-agent's shell can read it."
+    `You can read the scratchpad ${delegate} work in, but not change it: \`read\` a file, \`ls\` a directory, \`find\` files by name, and \`grep\` their contents.`,
+    "Use these to check a report against what is actually on disk: read the file it says it made or changed. You cannot run commands, write, edit or delete; that is what delegation is for."
   ].join("\n");
 }
 
@@ -79,8 +78,8 @@ export function sandboxEnv(env: Env): Record<string, string> {
     NODE_OPTIONS: "--use-openssl-ca",
     GIT_AUTHOR_NAME: author.name,
     GIT_COMMITTER_NAME: author.name,
-    // An empty email is git's fatal "empty ident"; unset, git falls back to
-    // what the checkout's own config says.
+    // Left unset rather than empty: git would accept an empty email and record
+    // `<>`, while unset it falls back to what the repository's own config says.
     ...(author.email
       ? { GIT_AUTHOR_EMAIL: author.email, GIT_COMMITTER_EMAIL: author.email }
       : {})

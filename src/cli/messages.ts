@@ -85,7 +85,7 @@ export const FLAGS: readonly Flag[] = [
   {
     key: "browser",
     spelled: "--browser",
-    answers: "the browser plugin, its bindings and skill"
+    answers: "the browser plugin and its bindings; generic: its skill"
   },
   { key: "yes", spelled: "--yes", answers: "do not ask for confirmation" },
   {

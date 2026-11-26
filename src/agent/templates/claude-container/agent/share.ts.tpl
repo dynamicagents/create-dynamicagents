@@ -59,8 +59,17 @@ export function shareFileTool(config: {
       if (read.stdout.includes("\u0000")) {
         return `\`${path}\` is not a text file, and only text can be shared.`;
       }
-      const cut = read.stdout.length > MAX_BYTES;
-      const text = cut ? read.stdout.slice(0, MAX_BYTES) : read.stdout;
+      // Bytes, as `head -c` counted them, not UTF-16 units: a file of
+      // multibyte text past the limit is fewer units than bytes, and measured
+      // by `length` it would be shared cut without saying so. A cut ends on a
+      // whole character, because a streaming decode holds back a partial one.
+      const bytes = new TextEncoder().encode(read.stdout);
+      const cut = bytes.length > MAX_BYTES;
+      const text = cut
+        ? new TextDecoder().decode(bytes.subarray(0, MAX_BYTES), {
+            stream: true
+          })
+        : read.stdout;
 
       const store = requireArtifactsStub(config.env);
       const id = await store.createArtifact(

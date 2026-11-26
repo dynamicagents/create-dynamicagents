@@ -4,6 +4,10 @@ import { projectFiles, type GeneratedFile } from "./files";
 import { displayName, names } from "./names";
 import type { AgentSpec } from "./spec";
 import { TEMPLATE } from "./templates/claude-container/template";
+import {
+  copyTs as genericCopyTs,
+  modelTs as genericModelTs
+} from "./templates/generic/project/shared";
 import { TEMPLATE_TENANT } from "./templates/shared/retenant";
 import { COMPATIBILITY_DATE, CONTAINER, DEFAULT_MODEL_ID } from "../train";
 
@@ -278,6 +282,41 @@ describe("its answers", () => {
     ).toContain(`  description:\n    "${long}",`);
   });
 
+  it("opens its README with the description it is given", () => {
+    const description = 'Turns "invoices" into CSV, one row per line item.';
+    const readme = at(
+      projectFiles({ ...spec(TEMPLATE_TENANT), description }),
+      "README.md"
+    );
+    expect(readme.startsWith(`# Claude Container\n\n${description}\n\n`)).toBe(
+      true
+    );
+    expect(readme).not.toContain("Gets a task done with Claude Code sessions");
+  });
+
+  // A merge into a generic project replaces its `src/copy.ts` and `src/model.ts`
+  // with these, and a generic agent merged in here imports from them, so each
+  // has to export at least what the generic blueprint's does.
+  it("exports from copy.ts and model.ts all a generic project's do", () => {
+    const exported = (source: string) =>
+      new Set(
+        [
+          ...source.matchAll(
+            /^export (?:const|function|type|interface) (\w+)/gm
+          )
+        ].map((match) => match[1])
+      );
+    for (const [generic, own] of [
+      [genericCopyTs, TEMPLATE.copyTs],
+      [genericModelTs, TEMPLATE.modelTs]
+    ] as const) {
+      const ours = exported(own);
+      expect([...exported(generic)].filter((name) => !ours.has(name))).toEqual(
+        []
+      );
+    }
+  });
+
   it("leaves the browser out whole without it", () => {
     const n = names(TEMPLATE_TENANT);
     expect(at(files, `${n.dir}/plugins.ts`)).not.toMatch(
@@ -297,8 +336,16 @@ describe("its answers", () => {
     expect(at(withBrowser, "wrangler.jsonc")).toMatch(
       /"BROWSER"[\s\S]*"LOADER"/
     );
-    for (const doc of ["README.md", "AGENTS.md"]) {
-      expect(at(withBrowser, doc), doc).toContain("Browser Rendering");
+  });
+
+  it("states the paid plan in the generic blueprint's words, browser or not", () => {
+    for (const project of [files, withBrowser]) {
+      expect(at(project, "README.md")).toContain(
+        "> **A paid Cloudflare Workers plan is required.** There is no free-tier\n> configuration of this project."
+      );
+      expect(at(project, "AGENTS.md")).toContain(
+        "**A paid Cloudflare Workers plan is a requirement**, not a recommendation. There\nis no free-tier path in this project."
+      );
     }
   });
 

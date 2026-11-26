@@ -42,12 +42,10 @@
   //   "routes": [{ "pattern": "agents.example.com", "custom_domain": true }]
   "workers_dev": true,
 
-  // Headroom for git, which runs on this Worker's CPU rather than in the
-  // container: `@cloudflare/computer/git` is isomorphic-git, so SHA-1 and
-  // inflate are JavaScript here. A shallow clone of a 5,456-file monorepo was
-  // measured at ~5.5 s wall-clock, most of it network, so the default 30 s is
-  // not close to binding; this is for the repository an order of magnitude past
-  // that, because a clone that dies at the limit costs a whole task.
+  // Headroom over the 30 s default, not a measured need. This agent runs no git
+  // on the Worker (the scratchpad's git runs in the container), so what spends
+  // this Worker's CPU is its own turns: a long conversation's history and its
+  // compaction. Lower it once the account's CPU metrics show the real peak.
   "limits": { "cpu_ms": 300000 },
 
   "observability": {
@@ -109,12 +107,9 @@
           "dockerfile": "./Dockerfile",
           // **Pinned to the version the claude-code plugin verified**, and
           // `npm run check` fails when the two differ: the `Dockerfile`
-          // carries why. The checksum is pinned because the build downloads
-          // the tarball.
+          // carries why.
           "build_vars": {
-            "CLAUDE_CODE_VERSION": "2.1.317",
-            "GH_VERSION": "2.103.3",
-            "GH_SHA256": "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d"
+            "CLAUDE_CODE_VERSION": "2.1.317"
           }
         }
       },

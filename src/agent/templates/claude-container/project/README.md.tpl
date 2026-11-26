@@ -19,9 +19,9 @@ with `npm create dynamicagents`.
   A2A tenant `claude-container`, with its own wrangler config, bindings and
   signing key.
 
-> **A paid Cloudflare Workers plan is required**, for Containers$BROWSER_TOO.
-> The sessions need at least one Claude subscription credential
-> (`claude setup-token`). There is no free-tier configuration of this project.
+> **A paid Cloudflare Workers plan is required.** There is no free-tier
+> configuration of this project. The sessions need at least one Claude
+> subscription credential (`claude setup-token`).
 
 Need it to work on GitHub repositories and carry changes to pull requests? The
 Dynamic Agents examples have a PR coordinator built on this same agent.

@@ -7,7 +7,7 @@
  * `claude-container`, byte for byte, so it can be run, diffed and edited as one.
  * A `$TOKEN` at every name would end that, and the files carry `$` in shell and
  * template strings that `render()` would read as tokens. The exception is the
- * four files whose browser region or `$BROWSER_TOO` the CLI's answers bind
+ * files whose browser region the CLI's answers bind
  * (`../claude-container/files.ts`): those go through `render()` first, so any
  * other `$UPPER` text brought into them has to be bound or reworded.
  *

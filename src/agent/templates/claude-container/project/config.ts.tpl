@@ -86,9 +86,8 @@ export const CLAUDE_CONTAINER: AgentTuning = {
  * The CPU is the exposure, and it was measured: on standard-1 (1/2 vCPU,
  * 4 GiB) a one-line README change took 59 minutes, of which 52 were spent at
  * **0.0% of Worker CPU** — the Worker was asleep awaiting this container the
- * whole time. `npm run check` on the target repo is five sequential tools
- * including two full `tsc` runs; it is recorded at 28 s in
- * `src/workspace/install-plan.ts` and was observed taking 3-5 minutes here.
+ * whole time. A repository's `npm run check` of five sequential tools, two
+ * full `tsc` runs among them, was observed taking 3-5 minutes at that size.
  *
  * What wants the second core is the build itself: it is what the measurement
  * above is about, and the work is inside the container where the Worker cannot

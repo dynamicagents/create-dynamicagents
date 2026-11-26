@@ -110,16 +110,15 @@ with the generic blueprint:
 - its turn's model, as the `modelId` line of `src/config.ts`. Its compaction
   model stays the template's full-size one, which that file's own comment says
   a flash model times out in at this agent's compaction size;
-- its card's description, as the `description` line of its `manifest.ts`. Its
-  soul is its operating rules and stays as written;
-- the browser, as a `$when browser` region of the files that hold it, and the
-  `$BROWSER_TOO` token in its README and AGENTS.md.
+- its description, as the `description` line of its `manifest.ts` and the
+  opening paragraph of its `README.md`. Its soul is its operating rules and
+  stays as written;
+- the browser, as a `$when browser` region of the files that hold it.
 
 The model and the description are replaced after the tenant rename, so an
-answer is never renamed. Four of its files (`wrangler.jsonc`, `plugins.ts`,
-`README.md`, `AGENTS.md`) go through `render()` for those markers, which throws
-on any other `$UPPER` text, so a re-sync that brings one in has to bind or
-reword it. Every file is otherwise a working file of the default project. Its
+answer is never renamed. The files that hold the browser (`wrangler.jsonc`,
+`plugins.ts`) go through `render()` for that region, which throws on any other
+`$UPPER` text, so a re-sync that brings one in has to bind or reword it. Every file is otherwise a working file of the default project. Its
 Claude Code session's model and effort are not asked for: they are lines of that
 `src/config.ts`, each commented with where to find the alternatives.
 

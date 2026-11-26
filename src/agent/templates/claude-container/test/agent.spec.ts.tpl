@@ -95,6 +95,25 @@ describe("share_file", () => {
     expect(page?.entries.at(-1)?.label).toBe("out/data.csv");
   });
 
+  it("measures the limit in bytes, so multibyte text past it says it was cut", async () => {
+    const limit = 256 * 1024;
+    // Two bytes a character: one past the limit in bytes, half of it in units.
+    const over = "é".repeat(limit / 2) + "é";
+    const answer = await share(execAnswering(over), "out/notes.txt");
+    expect(answer).toContain("cut at 256 KB");
+    const link = /https:\/\/agent\.example\/a\/([\w-]+)/.exec(answer);
+    const page = await requireArtifactsStub(testEnv).readArtifact(link![1]!);
+    const text = page?.entries.at(-1)?.text ?? "";
+    expect(new TextEncoder().encode(text).length).toBeLessThanOrEqual(limit);
+    expect(text).not.toContain("\uFFFD");
+  });
+
+  it("shares multibyte text at the limit whole", async () => {
+    const atLimit = "é".repeat((256 * 1024) / 2);
+    const answer = await share(execAnswering(atLimit), "out/notes.txt");
+    expect(answer).not.toContain("cut at");
+  });
+
   it("refuses a binary file", async () => {
     expect(await share(execAnswering("PK\u0000\u0003"), "out.zip")).toMatch(
       /not a text file/

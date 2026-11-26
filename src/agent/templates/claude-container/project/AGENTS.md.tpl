@@ -21,8 +21,8 @@ which steps its task runs.
 [core]: https://github.com/dynamicagents/core
 [plugins]: https://github.com/dynamicagents/plugins
 
-**A paid Cloudflare Workers plan is a requirement**, not a recommendation:
-Containers$BROWSER_TOO are not on the free tier.
+**A paid Cloudflare Workers plan is a requirement**, not a recommendation. There
+is no free-tier path in this project.
 
 ---
 
@@ -126,6 +126,12 @@ those along whole, mount the second agent in `src/index.ts`, add its bindings an
 a **new** migration tag in `wrangler.jsonc`, union `package.json` and
 `.env.example`, and merge `test/worker.ts` and `vitest.config.ts` rather than
 copying them. Then `npm run types && npm run check && npm test`.
+
+Its `src/copy.ts` and `src/model.ts` replace a generic project's rather than
+being left as found. Each holds everything a generic project's does and more:
+`BACKGROUND_GUIDANCE`, which this agent's soul imports, and models from AI
+Gateway's catalog beside Workers AI's, which `src/config.ts` may name. A generic
+agent merged the other way finds what it imports already here.
 
 **A merge does not move state.** Every task, conversation and scratchpad
 the agent had belongs to the Worker it was deployed as; in the merged Worker it

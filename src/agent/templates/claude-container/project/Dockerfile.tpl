@@ -67,23 +67,6 @@ RUN if [ -n "$CLAUDE_CODE_VERSION" ]; then \
       echo "no CLAUDE_CODE_VERSION build arg: this image has no Claude Code"; \
     fi
 
-# `gh`, for a session that opens and answers its own pull requests. It reaches
-# the API through the egress, which intercepts `api.github.com` and swaps in the
-# token: `gh` holds a placeholder, never the credential.
-ARG GH_VERSION=""
-ARG GH_SHA256=""
-RUN if [ -n "$GH_VERSION" ]; then \
-      curl -fsSL -o /tmp/gh.tar.gz \
-        "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" \
-      && echo "${GH_SHA256}  /tmp/gh.tar.gz" | sha256sum -c - \
-      && tar -xzf /tmp/gh.tar.gz -C /tmp \
-      && install -m 0755 "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh \
-      && rm -rf /tmp/gh.tar.gz "/tmp/gh_${GH_VERSION}_linux_amd64" \
-      && gh --version; \
-    else \
-      echo "no GH_VERSION build arg: this image has no GitHub CLI"; \
-    fi
-
 # The agent, which every command, install and session runs as, and which owns
 # the checkouts. The skeleton every session's home starts as is root's, so a
 # session starts from this image rather than from what an earlier one left.

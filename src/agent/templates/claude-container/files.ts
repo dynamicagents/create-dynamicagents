@@ -7,12 +7,12 @@
  * binding its variation, every file here is a working file of a real project
  * whose tenant is `claude-container`. The variations inside a file are the
  * tenant, swapped by `../shared/retenant.ts`; the answers it shares with the
- * generic blueprint, its turn's model, its card's description and whether it
- * has the browser; and the pins
+ * generic blueprint, its turn's model, its description (on its card and atop its
+ * README) and whether it has the browser; and the pins
  * `src/train.ts` owns: the compatibility date and the dependency ranges in
  * `./package-json.ts`. The browser is a `$when browser` region of the files
- * that hold it, and the model and the description are a line each, replaced
- * in `src/config.ts` and in the card, so every file stays a working file of the
+ * that hold it, and the model and the description are replaced in place, in
+ * `src/config.ts`, the card and the README, so every file stays a working file of the
  * default project apart from those markers and tokens.
  *
  * The toolchain files and the deployment's stub card are the generic
@@ -74,6 +74,28 @@ export function withDescription(source: string, description: string): string {
   );
 }
 
+/**
+ * The README with its opening paragraph set to the description the CLI asked
+ * for, as the generic README opens with it. The paragraph is replaced rather
+ * than tokenised so the template stays the default project's own file, and after
+ * the tenant rename, as the card's is, so an answer is never renamed.
+ */
+export function withReadmeDescription(
+  source: string,
+  description: string
+): string {
+  const opening = /^(# [^\n]*\n\n)[^\n]+(?:\n[^\n]+)*(?=\n\n)/;
+  if (!opening.test(source)) {
+    throw new Error(
+      "claude-container's README.md has no opening paragraph under its title"
+    );
+  }
+  return source.replace(
+    opening,
+    (_, title: string) => `${title}${description}`
+  );
+}
+
 /** One file to write, its path relative to the project root. */
 interface File {
   path: string;
@@ -90,9 +112,6 @@ export function claudeContainerFiles(spec: AgentSpec): File[] {
   });
   const file = (path: string, contents: string): File => ({ path, contents });
   const browser = spec.capabilities.includes("browser");
-  // Only said where it is true: naming a paid service the agent does not use is
-  // how a dev goes looking for a subscription they do not need.
-  const browserToo = { BROWSER_TOO: browser ? " and Browser Rendering" : "" };
 
   return [
     file("package.json", claudeContainerPackageJson(spec)),
@@ -112,8 +131,14 @@ export function claudeContainerFiles(spec: AgentSpec): File[] {
     file(".nvmrc", nvmrc),
     port(".dockerignore", t.dockerignore),
     port(".env.example", t.envExample),
-    port("README.md", render(t.readmeMd, { tokens: browserToo })),
-    port("AGENTS.md", render(t.agentsMd, { tokens: browserToo })),
+    file(
+      "README.md",
+      withReadmeDescription(
+        port("README.md", t.readmeMd).contents,
+        spec.description
+      )
+    ),
+    port("AGENTS.md", t.agentsMd),
     port("Dockerfile", t.dockerfile),
     port("scripts/build-daemon.mjs", t.buildDaemonMjs),
     port("scripts/verify-container-env.mjs", t.verifyContainerEnvMjs),
