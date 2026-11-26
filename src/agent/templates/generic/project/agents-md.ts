@@ -16,13 +16,6 @@ import source from "./AGENTS.md.tpl";
  * would fail its first check.
  */
 export function agentsMd(spec: AgentSpec, n: AgentNames): string {
-  // Only said where it is true. A `--no-browser` project has no Browser
-  // Rendering binding, and naming a paid service it does not use is how a dev
-  // goes looking for a subscription they do not need.
-  const browserToo = spec.capabilities.includes("browser")
-    ? ", and neither is Browser Rendering"
-    : "";
-
   const where = mdTable(
     ["You are changing…", "It goes in"],
     [
@@ -92,7 +85,6 @@ export function agentsMd(spec: AgentSpec, n: AgentNames): string {
     tokens: {
       TENANT: spec.tenant,
       NAME: spec.name,
-      BROWSER_TOO: browserToo,
       // Every table keeps its helper: `mdTable` pads each cell to its
       // column's width, so the layout depends on the tenant id in it — and
       // `where` and `merge` vary in their *number of rows* besides.

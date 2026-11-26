@@ -34,6 +34,13 @@ export class $WORKFLOW_CLASS extends TaskWorkflow<Env> {
     const reply = await step.agent("main", {
       agent: this.$CAMEL,
       input: event.payload.text,
+      // A message that arrives while this step runs is more input to it: the
+      // caller's follow-up joins the work in flight rather than starting a
+      // task of its own. A task takes joined messages one step at a time, so
+      // a pipeline that grows a second step declares this on whichever step
+      // should answer a follow-up — and with no step declaring it, a message
+      // sent mid-task is answered out of a fresh conversation instead.
+      joins: true,
       reconcile: TUNING.reconcile
     });
     return { reply };

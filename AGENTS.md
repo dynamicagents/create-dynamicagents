@@ -4,6 +4,15 @@ The CLI behind `npm create dynamicagents@latest`. npm maps `npm create <name>`
 to the package `create-<name>` and runs its `bin`, so the package name and the
 bin name are the command: renaming either breaks it.
 
+**Read this with the workspace's `AGENTS.md`.** This file is what is specific to
+create-dynamicagents. The rules that span the train live one level up, in
+[`dev-agents`](https://github.com/dynamicagents/dev-agents/blob/main/AGENTS.md),
+the workspace these repositories are submodules of: where a change goes, how a
+release reaches npm, how a pull request and an issue are handled, and the house
+rules for prose and comments. Consult it as the general reference rather than
+assuming this file is all of it, because a session started inside this repository
+may never be shown it: each submodule is its own repository root.
+
 It runs on a user's machine before anything of theirs is installed, and that
 sets the rules:
 
@@ -51,6 +60,20 @@ sets the rules:
   builds when `dist/` is missing or older than `src/`, so `npm test` alone still
   works. Everything else stays under the rule — a spec that wants a process to
   tell it about a _string_ is a spec in the wrong place.
+
+---
+
+## What a generated project says about the plan
+
+A generated `README.md` and `AGENTS.md` each state that a **paid Cloudflare
+Workers plan** is required and that the project has no free-tier configuration,
+in one sentence, with no reasoning about tiers behind it. Nothing varies: the
+sentence is in the `.tpl` file, the same for every project, with no token, no
+condition and no module standing behind it, because nothing here detects a plan
+or writes a free-tier path to fall back to.
+
+The assumption under that sentence is the train's rather than this package's, so
+it lives in the workspace's `AGENTS.md` and not here.
 
 ---
 
@@ -239,6 +262,13 @@ Two rules follow, and breaking either is invisible until somebody's first run:
   the row in `README.md`. One without the others is a flag that works and
   nothing documents, or one documented and refused; `messages.spec.ts` holds the
   three together.
+- **A message is said somewhere.** A string `src/cli/messages.ts` exports and
+  nothing reads is a sentence nobody is ever shown, whatever its docstring
+  claims, and the exhaustiveness above covers only the flags. So
+  `messages.spec.ts` holds every export of that module to being named by a
+  module that prints, or composed into a message that is. A question's help is
+  printed above its prompt rather than passed to it, because clack's `text()`
+  has no help field.
 
 ---
 

@@ -8,7 +8,7 @@ import type { StepJob } from "@dynamicagents/core/workflow";
 import type { ContextConfig } from "agents/context";
 import type { LanguageModel } from "ai";
 import { RETRY_BRIEF } from "@/copy";
-import { agentModel } from "@/model";
+import { agentModel, transientChatError } from "@/model";
 // $when general
 import { $CHILD_CLASS } from "./children";
 // $end
@@ -29,6 +29,15 @@ import { TUNING } from "./tuning";
 export class $AGENT_CLASS extends StepAgent<Env> {
   protected readonly compactAfterTokens = TUNING.compactAfterTokens;
   protected readonly keepRecentTokens = TUNING.keepRecentTokens;
+
+  /**
+   * A turn the platform cut is continued rather than failed, and every other
+   * error is still core's classifier's to answer. `src/model.ts` holds the why,
+   * and what it costs.
+   */
+  override classifyChatError(error: unknown) {
+    return transientChatError(error) ?? super.classifyChatError(error);
+  }
 
   override getModel(): ThinkModel {
     return agentModel(

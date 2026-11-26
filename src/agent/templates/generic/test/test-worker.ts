@@ -14,8 +14,9 @@ import source from "./worker.ts.tpl";
  * card and lifecycle through core's A2A edge.
  *
  * The most structural of the templates, and the one that most needed to become
- * a file: six regions, all on `general`, from a named import inside a list to
- * a whole class and the script rule that reaches it.
+ * a file: a region at every site the sub-agent is reached from, all on
+ * `general`, from a named import inside a list to a whole class and the script
+ * rule that routes to it.
  */
 export function testWorkerTs(spec: AgentSpec, n: AgentNames): string {
   const T = `Test${n.pascal}`;

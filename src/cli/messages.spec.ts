@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import * as ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { BLUEPRINTS } from "../agent/offer/blueprints";
 import { projectFiles } from "../agent/files";
@@ -20,6 +21,7 @@ import {
   otherModelLabel,
   NEXT_STEPS,
   OUTRO,
+  tenantHelp,
   tree,
   unknownBlueprint,
   unknownKind,
@@ -34,6 +36,149 @@ const PRINT_WIDTH = 80;
 
 /** A flag as it is typed, out of how the help spells it: `--help, -h` → `--help`. */
 const flagName = (spelled: string): string => spelled.split(/[\s,]/)[0]!;
+
+/** The module the spec below is about, as `modules()` names it: under `src/`. */
+const SUBJECT = "cli/messages.ts";
+
+/**
+ * Every module the bin is bundled from, parsed. No spec is one of them.
+ *
+ * Parsed rather than matched, because the question below is about identifiers
+ * and this package's messages are strings full of the words it would match: the
+ * parse is what makes `"--help, -h"` text and `help` a name. The compiler is
+ * already a devDependency, and `npm run check` runs it over this file anyway.
+ */
+const modules = (): { path: string; source: ts.SourceFile }[] => {
+  const src = new URL("../", import.meta.url);
+  return readdirSync(src, { recursive: true, encoding: "utf8" })
+    .map((entry) => entry.replaceAll("\\", "/"))
+    .filter((path) => path.endsWith(".ts") && !path.endsWith(".spec.ts"))
+    .map((path) => ({
+      path,
+      source: ts.createSourceFile(
+        path,
+        readFileSync(new URL(path, src), "utf8"),
+        ts.ScriptTarget.ESNext,
+        // Parents, which `reference` reads to tell a name from a property.
+        true
+      )
+    }));
+};
+
+/** Every node under one, the subject included. */
+const walk = (node: ts.Node, visit: (node: ts.Node) => void): void => {
+  visit(node);
+  ts.forEachChild(node, (child) => walk(child, visit));
+};
+
+/** `./messages` however a module reaches it, and nothing else called that. */
+const isMessages = (specifier: string): boolean =>
+  /(^|\/)messages$/.test(specifier);
+
+/**
+ * Which messages a module reads: every name it takes out of `./messages`, and
+ * every property it reads off a namespace import of it, under whatever name it
+ * imported that as.
+ *
+ * A module that reached the messages some third way would read as reading none
+ * of them, so the spec below would fail rather than pass quietly. That is the
+ * direction to fail in for a check nothing else backs up.
+ */
+const reads = (source: ts.SourceFile): string[] => {
+  const named: string[] = [];
+  const namespaces = new Set<string>();
+
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
+    if (!isMessages(statement.moduleSpecifier.text)) continue;
+    const bindings = statement.importClause?.namedBindings;
+    if (bindings === undefined) continue;
+    if (ts.isNamespaceImport(bindings)) {
+      namespaces.add(bindings.name.text);
+      continue;
+    }
+    for (const element of bindings.elements) {
+      named.push((element.propertyName ?? element.name).text);
+    }
+  }
+
+  walk(source, (node) => {
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      namespaces.has(node.expression.text)
+    ) {
+      named.push(node.name.text);
+    }
+  });
+
+  return named;
+};
+
+/** Every message a module exports: a const or a function, never a type. */
+const exported = (source: ts.SourceFile): string[] => {
+  const found: string[] = [];
+
+  for (const statement of source.statements) {
+    const modifiers = ts.canHaveModifiers(statement)
+      ? ts.getModifiers(statement)
+      : undefined;
+    const isExported = modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+    );
+    if (isExported !== true) continue;
+
+    if (ts.isVariableStatement(statement)) {
+      for (const declared of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declared.name)) found.push(declared.name.text);
+      }
+    }
+    if (ts.isFunctionDeclaration(statement) && statement.name !== undefined) {
+      found.push(statement.name.text);
+    }
+  }
+
+  return found;
+};
+
+/**
+ * Whether an identifier uses a binding, rather than being a name something else
+ * owns: a property (`flag.help`, `{ help: … }`, an interface member) says
+ * nothing about the message called `help`, and the name a declaration or an
+ * import introduces is where a binding starts rather than a use of it.
+ */
+const use = (identifier: ts.Identifier): boolean => {
+  const parent = identifier.parent;
+  const owned =
+    (ts.isPropertyAccessExpression(parent) ||
+      ts.isPropertyAssignment(parent) ||
+      ts.isPropertySignature(parent) ||
+      ts.isVariableDeclaration(parent) ||
+      ts.isParameter(parent) ||
+      ts.isFunctionDeclaration(parent) ||
+      ts.isBindingElement(parent)) &&
+    parent.name === identifier;
+  return (
+    !owned && !ts.isImportSpecifier(parent) && !ts.isNamespaceImport(parent)
+  );
+};
+
+/**
+ * Every binding a module uses, as code: not a comment, not literal text.
+ *
+ * By name, not by resolved symbol, which is the one thing this does not
+ * promise: a local or a parameter called the same as a message would read as a
+ * use of it. That direction loses a finding rather than inventing one, and
+ * resolving every identifier means building a program and a checker in a spec.
+ */
+const uses = (source: ts.SourceFile): Set<string> => {
+  const found = new Set<string>();
+  walk(source, (node) => {
+    if (ts.isIdentifier(node) && use(node)) found.add(node.text);
+  });
+  return found;
+};
 
 describe("title", () => {
   it("names the version that ran", () => {
@@ -76,6 +221,39 @@ describe("FLAGS", () => {
     for (const flag of FLAGS) {
       expect(readme, flag.key).toContain(`\`${flagName(flag.spelled)}\``);
     }
+  });
+});
+
+describe("every message", () => {
+  /**
+   * The exhaustiveness above covers the flags. This covers everything else in
+   * the module, because a string nothing reads is a sentence nobody is ever
+   * shown, and a docstring saying where it is shown does not make it so.
+   *
+   * Read out of the source rather than out of an import: what a bin *says* is
+   * not a property an imported function has, so what is checkable is whether
+   * the module that prints names the message at all. That is weaker than
+   * watching a terminal, and it is the whole of what nothing else was checking.
+   */
+  it("is said by a module that prints, or composed into one that is", () => {
+    const all = modules();
+    const own = all.find((module) => module.path === SUBJECT);
+    expect(own, SUBJECT).toBeDefined();
+
+    const said = new Set(
+      all
+        .filter((module) => module.path !== SUBJECT)
+        .flatMap((module) => reads(module.source))
+    );
+    // Nobody says it, so the one thing left that saves a message is another
+    // message here using it: a use is never the declaration it belongs to.
+    const here = uses(own!.source);
+
+    const unread = exported(own!.source).filter(
+      (name) => !said.has(name) && !here.has(name)
+    );
+
+    expect(unread).toEqual([]);
   });
 });
 
@@ -138,6 +316,18 @@ describe("the printed width", () => {
           PRINT_WIDTH
         );
       }
+    }
+  });
+
+  /**
+   * What is printed above a prompt has less of the width to spend: clack puts
+   * its guide and two spaces in front of every line and wraps none of them, so
+   * a line that fits the print width here is one the terminal leaves alone.
+   */
+  it("leaves clack's guide room in the help above a prompt", () => {
+    const GUIDE = "│  ".length;
+    for (const line of tenantHelp.split("\n")) {
+      expect(line.length + GUIDE, line).toBeLessThanOrEqual(PRINT_WIDTH);
     }
   });
 });

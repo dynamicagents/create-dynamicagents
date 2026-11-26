@@ -306,15 +306,21 @@ const tenant = await settle(
     named: "--name",
     fallback: defaults?.tenant
   }),
-  async (initial) =>
-    typed(
+  async (initial) => {
+    // Above the prompt rather than inside it, because clack's `text()` has no
+    // help field. Inside this thunk because this is where the question is
+    // actually asked: a run that carried `--name` never reaches it, and the one
+    // moment the id is cheap to change is while somebody is typing it.
+    log.info(say.tenantHelp);
+    return typed(
       await text({
         message: say.askTenant,
         placeholder: say.tenantPlaceholder,
         initialValue: initial ?? defaults?.tenant,
         validate: whyNot(asTenant)
       })
-    )
+    );
+  }
 );
 
 const description = await settle(
