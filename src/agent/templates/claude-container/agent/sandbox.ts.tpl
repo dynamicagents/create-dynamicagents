@@ -4,11 +4,11 @@ import {
   type Lead
 } from "@dynamicagents/plugins/claude-code";
 import {
+  DEFAULT_INSTALL_PLAN,
   SandboxObjectBase,
   type SandboxObjectConfig
 } from "@dynamicagents/plugins/sandbox";
 import { CLAUDE_CONTAINER_SANDBOX_INSTANCE, SANDBOX_ADAPTER } from "@/config";
-import { INSTALL_PLAN } from "@/workspace/install-plan";
 import { sandboxConfigFor } from "@/workspace/container";
 import { claudeCredentials, CREDENTIALS_KEY } from "./claude-code";
 import { CLAUDE_CONTAINER_EGRESS } from "./egress";
@@ -46,7 +46,9 @@ export class ClaudeContainerSandbox
       label: "claude-container-sandbox",
       adapter: SANDBOX_ADAPTER,
       instance: CLAUDE_CONTAINER_SANDBOX_INSTANCE,
-      installPlan: INSTALL_PLAN,
+      // The plugin requires one, and installs only on a repository checkout:
+      // the scratchpad is not one, so nothing here ever runs it.
+      installPlan: DEFAULT_INSTALL_PLAN,
       egress: {
         entrypoint: this.ctx.exports.ClaudeContainerEgress,
         self: "CLAUDE_CONTAINER_SANDBOX",

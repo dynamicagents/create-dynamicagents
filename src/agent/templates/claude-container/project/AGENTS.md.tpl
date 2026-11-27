@@ -31,7 +31,7 @@ is no free-tier path in this project.
 | You are changing…                                         | It goes in                                |
 | --------------------------------------------------------- | ----------------------------------------- |
 | how the agent works: when it delegates, checks, shares    | `src/agents/claude-container/soul.ts`     |
-| what the coordinator can do itself                        | `src/agents/claude-container/plugins.ts`  |
+| what the agent can do itself                              | `src/agents/claude-container/plugins.ts`  |
 | a session: its spec, its brief, what the agent hears      | `src/agents/claude-container/children.ts` |
 | what it advertises to a gatekeeper                        | `src/agents/claude-container/manifest.ts` |
 | the steps its task runs                                   | `src/agents/claude-container/workflow.ts` |

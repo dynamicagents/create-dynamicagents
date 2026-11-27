@@ -117,11 +117,11 @@ export const SANDBOX_INSTANCE: SandboxObjectConfig["instance"] = {
  *
  * Cores are the only dimension that would buy it anything, and they are what it
  * cannot have cheaply. About half of a writing session's wall-clock is the
- * target's checks and tests, one process each, which no number of containers
+ * project's checks and tests, one process each, which no number of containers
  * speeds up: the same suite took ~200 s at 2 vCPU and 80 s on a 4-vCPU CI
  * runner. Against that, every added core bills memory for the whole run at the
- * 3 GiB-per-vCPU floor above, and the fan-out multiplies it — the containers
- * block in `wrangler.jsonc` carries that arithmetic.
+ * 3 GiB-per-vCPU floor above, and every caller at work multiplies it: the
+ * containers block in `wrangler.jsonc` carries that arithmetic.
  */
 export const CLAUDE_CONTAINER_SANDBOX_INSTANCE: SandboxObjectConfig["instance"] =
   SANDBOX_INSTANCE;
@@ -131,8 +131,7 @@ export const SANDBOX_ADAPTER = "da-claude";
 
 /**
  * How long a sandbox nobody uses is kept: then the weekly sweep empties it,
- * its backups and any commits in it that were never pushed with it. The parent
- * is told this number, so a worktree's work is pushed or let go knowingly.
+ * the scratchpad and its backups included, so what was never shared is gone.
  */
 export const SANDBOX_RECLAIM_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -180,7 +179,7 @@ export const CLAUDE_CODE_SESSION = {
    * `xhigh`, the level above Opus 5's own default of `high`. Same argument as
    * the model: the bucket is spent either way once a session starts, and what
    * costs a deployment real time is not an expensive session but a cheap one
-   * that half-finishes and leaves a checkout somebody has to read before the
+   * that half-finishes and leaves a scratchpad somebody has to read before the
    * next can use it.
    *
    * It is bought per turn, so it compounds over a session, at a multiple

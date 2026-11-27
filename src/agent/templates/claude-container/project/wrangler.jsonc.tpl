@@ -79,7 +79,7 @@
   //
   // `class_name` is the Durable Object that *owns* the container, one-to-one:
   // a container belongs to exactly one object, which is what makes "one sandbox
-  // per repository" a structural property rather than a convention.
+  // per caller" a structural property rather than a convention.
   //
   // **The object starts its own container** (`scheduling_policy`), from the
   // image under `images.app` and at the size its config passes: see
@@ -89,9 +89,10 @@
   //
   // **Nothing here caps how many run.** Running containers count against the
   // account's limits rather than a ceiling per entry, and that is what bounds
-  // the fan-out: a writing or planning session works in a worktree of its own
-  // while the parent keeps one, so N sessions at once want N+1 sandboxes. What
-  // the width costs is the bill, because memory and disk are billed on
+  // the fan-out: every caller's sessions and its parent share that caller's one
+  // scratchpad, so N callers at work want N sandboxes, and sessions running at
+  // once for one caller share its container's cores and memory. What the width
+  // costs is the bill, because memory and disk are billed on
   // provisioned resources for as long as an instance runs, which is why a
   // settled task stops its container rather than waiting out the idle deadline.
   //
@@ -181,10 +182,10 @@
         "name": "ClaudeContainerAgent"
       },
 
-      // Not an agent: the sandbox. One object per caller per repository,
-      // driving the container whose disk is that checkout. Addressed by name,
-      // never by the caller alone: see `sandboxName` in
-      // `@dynamicagents/plugins/sandbox`.
+      // Not an agent: the sandbox. One object per caller, driving the
+      // container whose disk holds that caller's scratchpad. Addressed by
+      // name, never by the caller alone: see `scratchSandbox` in
+      // `src/agents/claude-container/children.ts`.
       {
         "class_name": "ClaudeContainerSandbox",
         "name": "CLAUDE_CONTAINER_SANDBOX"

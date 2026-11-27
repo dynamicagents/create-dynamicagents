@@ -16,9 +16,11 @@
  * - the agent's own directory holds everything specific to it, the numbers
  *   included, so a merge moves one folder;
  * - outside it, the support files are tenant-independent and byte-identical in
- *   every generated project — the toolchain config, `src/copy.ts`,
- *   `src/model.ts`, the test tsconfig — so a merge has nothing to reconcile
- *   there. What is left is wiring, and short: the Worker entry, the deployment
+ *   every project of one blueprint: the toolchain config, `src/copy.ts`,
+ *   `src/model.ts`, the test tsconfig. Across blueprints, a claude-container
+ *   project's `src/copy.ts` and `src/model.ts` export everything a generic
+ *   one's do and more, so the first step says which way they go. What is left
+ *   is wiring, and short: the Worker entry, the deployment
  *   card, the wrangler and vitest configs, the dependency list, the secrets,
  *   the suite and the two guides. Each one of them is a step below, and
  *   `merge-notes.spec.ts` derives that set rather than trusting this list;
@@ -44,7 +46,7 @@ export interface MergeStep {
 export const mergeSteps = (dir: string): readonly MergeStep[] => [
   {
     path: `${dir}/`,
-    what: "Copy the whole directory across. Nothing in it reaches outside itself except `@/copy` and `@/model`, which the other project already has."
+    what: "Copy the whole directory across. Nothing in it reaches outside itself except `@/copy` and `@/model`, which a project of the same blueprint already has. A claude-container agent arriving in a generic project brings its own `src/copy.ts` and `src/model.ts` too: they replace the generic ones, which lack what it imports."
   },
   {
     path: "src/index.ts",

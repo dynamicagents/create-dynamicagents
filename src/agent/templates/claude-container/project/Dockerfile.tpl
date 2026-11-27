@@ -1,10 +1,10 @@
-# The sandbox image: one container per caller per repository, whose disk is
-# the checkout, driven by its Durable Object through the harness daemon.
+# The sandbox image: one container per caller, whose disk holds the caller's
+# scratchpad, driven by its Durable Object through the harness daemon.
 #
 # What `@dynamicagents/plugins/sandbox` requires of an image is in its README:
 # the `agent` user owning /workspace, setpriv, timeout, an `env` that takes
 # `-C`, git, update-ca-certificates, sandbox-shim, and a root-owned session
-# skeleton. The rest is what a repository needs to build: Node, a C toolchain
+# skeleton. The rest is what a session needs to build: Node, a C toolchain
 # for native modules, and ripgrep for the file tools' searches.
 #
 # Each `containers[]` entry in wrangler.jsonc builds its own image from this

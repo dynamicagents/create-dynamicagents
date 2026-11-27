@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { projectFiles } from "../../files";
 import { specs } from "../../fixtures";
 import { MERGE_CAVEAT, mergeSteps } from "./merge-notes";
+import { copyTs, modelTs } from "../generic/project/shared";
+import { TEMPLATE } from "../claude-container/template";
 import { names } from "../../names";
 import type { AgentSpec } from "../../spec";
 
@@ -92,6 +94,23 @@ describe("mergeSteps", () => {
         true
       );
     }
+  });
+
+  it("says which support files a claude-container agent brings along", () => {
+    // Same-blueprint projects share these byte for byte; across blueprints
+    // they differ, and the generic ones lack what a claude-container agent
+    // imports. A recipe that called them shared would end in a missing export.
+    const first = mergeSteps(n.dir)[0]!.what;
+    for (const [path, generic, container] of [
+      ["src/copy.ts", copyTs, TEMPLATE.copyTs],
+      ["src/model.ts", modelTs, TEMPLATE.modelTs]
+    ] as const) {
+      if (generic === container) continue;
+      expect(first, path).toContain(`\`${path}\``);
+    }
+    expect(first).toMatch(
+      /claude-container agent arriving in a generic project/
+    );
   });
 
   it("says a merge does not move state", () => {

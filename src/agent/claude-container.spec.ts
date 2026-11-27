@@ -77,12 +77,7 @@ const TOP = [
 /** Each variant's own files, beside {@link TOP}, in the order they are written. */
 const VARIANTS = {
   generic: {
-    workspace: [
-      "container.ts",
-      "git-identity.ts",
-      "install-plan.ts",
-      "scratch.ts"
-    ],
+    workspace: ["container.ts", "git-identity.ts", "scratch.ts"],
     agent: [
       "definition.ts",
       "host.ts",

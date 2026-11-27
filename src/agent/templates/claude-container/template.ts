@@ -51,7 +51,6 @@ import wranglerJsonc from "./project/wrangler.jsonc.tpl";
 
 import containerTs from "./workspace/container.ts.tpl";
 import gitIdentityTs from "./workspace/git-identity.ts.tpl";
-import installPlanTs from "./workspace/install-plan.ts.tpl";
 import scratchTs from "./workspace/scratch.ts.tpl";
 
 import agentTs from "./agent/agent.ts.tpl";
@@ -91,7 +90,6 @@ export const TEMPLATE: Template = {
   workspace: [
     ["container.ts", containerTs],
     ["git-identity.ts", gitIdentityTs],
-    ["install-plan.ts", installPlanTs],
     ["scratch.ts", scratchTs]
   ],
   agent: [

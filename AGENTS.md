@@ -134,7 +134,7 @@ moves where a line crosses the print width, in code nobody here wrote for a
 `$TOKEN`, so every install ends with the project's own prettier over the files
 it wrote, the last step of `installProject`. That is never `.`, because the
 directory may hold a user's `.vscode` or `.idea`, which a write leaves where they
-are. `finishByHand` lists `npm run format` when the install does not finish. A generic project is written formatted, so the step changes nothing
+are. `finishByHand` lists the same prettier over the entries it wrote when the install does not finish. A generic project is written formatted, so the step changes nothing
 there, and `formatting.spec.ts` still holds that output to being formatted as
 written. `src/agent/claude-container.spec.ts` holds the rest: the file list, no spelling of the template's tenant left behind, the
 wiring between files, and every file already formatted for `claude-container`
@@ -254,7 +254,7 @@ Two rules follow, and breaking either is invisible until somebody's first run:
   when the agent starts, so one without the other is an agent that throws on
   its first request; and the skill on the card wherever the blueprint's card
   advertises what its tools do. The generic card does; `claude-container`'s
-  advertises the task, not the tools its parent checks it with, so its browser
+  advertises the task, not its parent's own tools, so its browser
   adds no skill (`src/agent/offer/capabilities.ts`).
 - **A flag arrives whole** too, on this side of the line — the entry in
   `src/cli/args.ts`'s `OPTIONS`, the line in `src/cli/messages.ts`'s `FLAGS`,

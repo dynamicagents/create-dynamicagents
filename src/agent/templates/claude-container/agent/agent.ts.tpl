@@ -8,16 +8,15 @@ import type { AgentPlugin } from "@dynamicagents/core";
 import { StepAgent } from "@dynamicagents/core/agent";
 import type { SubAgentClass } from "@dynamicagents/core/subagent";
 import type { StepJob } from "@dynamicagents/core/workflow";
-import { computerWorkspace } from "@dynamicagents/plugins/computer";
 import type { ContextConfig } from "agents/context";
 import type { LanguageModel, ToolSet } from "ai";
 import { CLAUDE_CONTAINER, SANDBOX_RECLAIM_MS } from "@/config";
 import { RETRY_BRIEF } from "@/copy";
 import { agentModel, transientChatError } from "@/model";
-import { sandboxShell, WORKSPACE_WRITERS } from "@/workspace/container";
+import { sandboxShell, THINK_FILE_TOOLS } from "@/workspace/container";
 import { ClaudeContainerSessionChild, scratchSandbox } from "./children";
 import { claudeContainer } from "./definition";
-import { parentPlugins, place } from "./plugins";
+import { parentPlugins } from "./plugins";
 import { shareFileTool } from "./share";
 import { MEMORY, SOUL } from "./soul";
 
@@ -29,8 +28,8 @@ const LABEL = "claude-container";
  * in a container, and shares what they make.
  *
  * The parent runs on a model of its own (`src/config.ts`) and has no shell and
- * no way to write a file: it opens the scratchpad, briefs a session, reads what
- * the session left, and shares files with the person. Every write is a
+ * no file tools: it opens the scratchpad, briefs a session, reads the session's
+ * report, and shares the files it names with the person. Every write is a
  * session's, a `claude -p` process in the sandbox's container, on a Claude
  * subscription credential the container never holds: see
  * `@dynamicagents/plugins/claude-code`.
@@ -40,14 +39,7 @@ export class ClaudeContainerAgent extends StepAgent<Env> {
   protected readonly keepRecentTokens = CLAUDE_CONTAINER.keepRecentTokens;
 
   /** The caller's one sandbox, which holds the scratchpad. */
-  readonly #place = place(this.env, () => scratchSandbox(this.callerKey()));
-
-  /**
-   * Think's file tools, over the scratchpad rather than this object's SQLite.
-   * The computer plugin's workspace carries no runtime, so Think offers no
-   * `exec` over it, and `beforeTurn` drops its writers.
-   */
-  override workspace = computerWorkspace(this.#place);
+  readonly #sandboxName = (): string => scratchSandbox(this.callerKey());
 
   override classifyChatError(error: unknown) {
     return transientChatError(error) ?? super.classifyChatError(error);
@@ -83,7 +75,7 @@ export class ClaudeContainerAgent extends StepAgent<Env> {
   }
 
   override getPlugins(): AgentPlugin<Env>[] {
-    return parentPlugins(this.env, this.#place);
+    return parentPlugins(this.env, this.#sandboxName);
   }
 
   override getSubAgents(): SubAgentClass[] {
@@ -101,7 +93,7 @@ export class ClaudeContainerAgent extends StepAgent<Env> {
       share_file: shareFileTool({
         exec: sandboxShell(
           this.env.CLAUDE_CONTAINER_SANDBOX,
-          this.#place.sandboxName
+          this.#sandboxName
         ),
         env: this.env,
         owner: () => this.callerKey(),
@@ -111,7 +103,9 @@ export class ClaudeContainerAgent extends StepAgent<Env> {
   }
 
   /**
-   * The turn core configures, minus Think's own file writers. The model reasons
+   * The turn core configures, minus Think's own file tools: they work on this
+   * object's SQLite, not the scratchpad, so a model offered them would read an
+   * empty tree or write files no session or person ever sees. The model reasons
    * at `CLAUDE_CONTAINER`'s effort where it sets one, which an `openai/*` model
    * alone reads.
    */
@@ -122,7 +116,7 @@ export class ClaudeContainerAgent extends StepAgent<Env> {
       ...base,
       activeTools:
         base?.activeTools ??
-        Object.keys(ctx.tools).filter((name) => !WORKSPACE_WRITERS.has(name)),
+        Object.keys(ctx.tools).filter((name) => !THINK_FILE_TOOLS.has(name)),
       ...(reasoningEffort
         ? {
             providerOptions: {
