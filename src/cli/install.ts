@@ -69,10 +69,29 @@ async function npm(args: string[], cwd: string): Promise<void> {
  */
 export async function installProject(
   dir: string,
-  report: (step: string) => void
+  report: (step: string) => void,
+  written: readonly string[]
 ): Promise<void> {
   report("Installing dependencies");
   await npm(["install", "--no-audit", "--no-fund"], dir);
   report("Generating Worker types");
   await npm(["exec", "--", "wrangler", "types"], dir);
+  // Every install ends with the project's own prettier, the one formatter that
+  // cannot disagree with its own `prettier --check`, and which exists only from
+  // here on. A generic project is written formatted, so this changes nothing
+  // there; a claude-container one is laid out for its template's tenant, and
+  // another tenant id moves where a line crosses the print width.
+  // `src/agent/formatting.spec.ts` still holds the generic output to being
+  // formatted as written, so this run hides no template that stopped being so.
+  //
+  // **Only the files this wrote**, never `.`: the directory may hold entries a
+  // write leaves where they are (`./existing.ts`, `.vscode/` and the like), and
+  // reformatting somebody's editor settings, or failing the install on one that
+  // does not parse, is touching what this promised not to. `--ignore-unknown`
+  // because some of what it wrote (`.gitignore`, `Dockerfile`) has no parser.
+  report("Formatting");
+  await npm(
+    ["exec", "--", "prettier", "--write", "--ignore-unknown", ...written],
+    dir
+  );
 }

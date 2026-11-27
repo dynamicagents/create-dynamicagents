@@ -18,7 +18,7 @@ import {
 import { BLUEPRINTS } from "./agent/offer/blueprints";
 import { CAPABILITIES } from "./agent/offer/capabilities";
 import { displayName } from "./agent/names";
-import type { AgentSpec, Capability } from "./agent/spec";
+import type { AgentSpec, Capability, SubAgentName } from "./agent/spec";
 import {
   asBlueprint,
   asDescription,
@@ -290,8 +290,22 @@ const blueprint = await settle(
     })
 );
 
+// A sub-agent that is what the blueprint is for cannot be left out, and saying
+// which one it is answers the flag better than a list of what it ignores.
+if (!blueprint.subAgent.optional && flags.subagent !== undefined) {
+  stop(say.fixedSubAgent(blueprint.label, blueprint.subAgent.name));
+}
+
+// Where a blueprint has an identity of its own, it is the default rather than
+// an answer: the flag and the prompt still take another.
+const defaults = blueprint.defaults;
+
 const tenant = await settle(
-  replyTo(flags.name, asTenant, { interactive, named: "--name" }),
+  replyTo(flags.name, asTenant, {
+    interactive,
+    named: "--name",
+    fallback: defaults?.tenant
+  }),
   async (initial) => {
     // Above the prompt rather than inside it, because clack's `text()` has no
     // help field. Inside this thunk because this is where the question is
@@ -302,7 +316,7 @@ const tenant = await settle(
       await text({
         message: say.askTenant,
         placeholder: say.tenantPlaceholder,
-        initialValue: initial,
+        initialValue: initial ?? defaults?.tenant,
         validate: whyNot(asTenant)
       })
     );
@@ -312,24 +326,31 @@ const tenant = await settle(
 const description = await settle(
   replyTo(flags.description, asDescription, {
     interactive,
-    named: "--description"
+    named: "--description",
+    fallback: defaults?.description
   }),
   async (initial) =>
     typed(
       await text({
         message: say.askDescription,
         placeholder: say.descriptionPlaceholder,
-        initialValue: initial,
+        initialValue: initial ?? defaults?.description,
         validate: whyNot(asDescription)
       })
     )
 );
 
-const subAgent = await optional(
-  flags.subagent,
-  () => confirm({ message: say.askSubAgent, initialValue: true }),
-  true
-);
+// A blueprint whose sub-agent is optional asks for it; one whose sub-agent is
+// what it is for always has it.
+const subAgent: SubAgentName | undefined = !blueprint.subAgent.optional
+  ? blueprint.subAgent.name
+  : (await optional(
+        flags.subagent,
+        () => confirm({ message: say.askSubAgent, initialValue: true }),
+        true
+      ))
+    ? blueprint.subAgent.name
+    : undefined;
 
 const capabilities = await optional<Capability[]>(
   flags.browser === true
@@ -372,7 +393,7 @@ const spec: AgentSpec = {
   name: displayName(tenant),
   description,
   blueprint: blueprint.value,
-  subAgent,
+  ...(subAgent === undefined ? {} : { subAgent }),
   capabilities,
   modelId
 };
@@ -410,10 +431,11 @@ try {
 }
 log.success(say.wrote(target.named));
 
+const written = planned.plan.files.map((file) => file.path);
 const installing = spinner();
 installing.start(say.installing);
 try {
-  await installProject(target.dir, (step) => installing.message(step));
+  await installProject(target.dir, (step) => installing.message(step), written);
   installing.stop(say.installed);
 } catch (err) {
   // The project is written and complete; it is the install that failed. So the
@@ -421,10 +443,13 @@ try {
   // those needs the dependencies this did not install, and a success outro
   // under a failure is how somebody deploys a project that never typechecked.
   installing.stop(say.installing);
-  log.error(say.finishByHand(target.named, (err as Error).message));
+  log.error(say.finishByHand(target.named, (err as Error).message, written));
   cancel(say.notInstalled(spec.name));
   process.exit(1);
 }
 
-note(say.nextSteps(target.named, tenant), "Next");
-outro(say.outroLine(spec.name));
+note(
+  (say.NEXT_STEPS[blueprint.value] ?? say.nextSteps)(target.named, tenant),
+  "Next"
+);
+outro((say.OUTRO[blueprint.value] ?? say.OUTRO.generic)(spec.name));

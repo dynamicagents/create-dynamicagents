@@ -31,6 +31,30 @@ jobs:
   scaffold:
     timeout-minutes: 25
     runs-on: ubuntu-24.04
+    # One leg per blueprint, each scaffolded the way its README says, plus one
+    # for claude-container's other answers. The
+    # ported blueprint runs under another tenant id than the one its templates
+    # are written for, because that is the case the CLI's own specs cannot
+    # reach: the rename, and the format its install runs after it.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - blueprint: generic
+            dir: support
+            args: --name support --description "Answers product questions from the handbook" --browser
+          # With the browser, which no blueprint installs unless asked: its
+          # regions kept, which only `wrangler types` and `tsc` in the project
+          # itself can say still fit together.
+          - blueprint: claude-container
+            dir: runner
+            args: --name runner --browser
+          # Its other answers, under a real install: the browser regions dropped
+          # and the model line replaced.
+          - blueprint: claude-container
+            dir: lean
+            args: --name lean --no-browser --model @cf/zai-org/glm-4.7-flash
+    name: scaffold (${{ matrix.blueprint }} ${{ matrix.dir }})
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,12 +75,11 @@ jobs:
           set -euo pipefail
           tarball="$PWD/$(npm pack --silent)"
           cd "$RUNNER_TEMP"
+          # `matrix.args` is substituted into this script as text before bash
+          # reads it, so the quotes around a description stay quotes.
           npm exec --yes --package="$tarball" -- create-dynamicagents \
-            agent generic support \
-            --name support \
-            --description "Answers product questions from the handbook" \
-            --browser \
-            --yes
+            agent ${{ matrix.blueprint }} ${{ matrix.dir }} \
+            ${{ matrix.args }} --yes
 
       # The train's own default branches, in place of the published core and
       # plugins the scaffold installed. Both carry a `prepare` that builds, and
@@ -66,7 +89,7 @@ jobs:
       # The Worker types are regenerated after it, so the `check` below reads a
       # `worker-configuration.d.ts` written against what is now installed.
       - name: On the train's main
-        working-directory: ${{ runner.temp }}/support
+        working-directory: ${{ runner.temp }}/${{ matrix.dir }}
         run: |
           set -euo pipefail
           npm install --no-audit --no-fund \
@@ -85,21 +108,21 @@ jobs:
       # date a user receives and the runtime a user's install produces are both
       # on disk. Adopted from create-cloudflare's `check:compat-date`.
       - name: The date against the runtime it was pinned from
-        run: node scripts/check-compat-date.mjs "$RUNNER_TEMP/support"
+        run: node scripts/check-compat-date.mjs "$RUNNER_TEMP/${{ matrix.dir }}"
 
       # The generated project's own checks, run as its own README tells a dev to
       # run them. `check` begins with `wrangler types --check`, so a scaffold
       # that wrote a `wrangler.jsonc` its own types do not match fails here.
       - name: Its checks
-        working-directory: ${{ runner.temp }}/support
+        working-directory: ${{ runner.temp }}/${{ matrix.dir }}
         run: npm run check
 
       - name: Its tests
-        working-directory: ${{ runner.temp }}/support
+        working-directory: ${{ runner.temp }}/${{ matrix.dir }}
         run: npm test
 
       # Deployable: the Worker compiles, bundles, and resolves every binding
       # its wrangler config declares. No account, no token, nothing deployed.
       - name: Deployable
-        working-directory: ${{ runner.temp }}/support
+        working-directory: ${{ runner.temp }}/${{ matrix.dir }}
         run: npx wrangler deploy --dry-run --outdir dist

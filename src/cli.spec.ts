@@ -308,3 +308,75 @@ describe("--dry-run", () => {
     expect(existsSync(dir)).toBe(false);
   });
 });
+
+describe("a blueprint written as it stands", () => {
+  it("writes with nothing but --yes, on its own tenant id", async () => {
+    const dir = path.join(workspace, "coordinator");
+    const run = await bin(
+      "agent",
+      "claude-container",
+      dir,
+      "--yes",
+      "--dry-run"
+    );
+    expect(run.status).toBe(0);
+    expect(run.said).toContain("src/agents/claude-container/");
+    expect(run.said).toContain("src/workspace/");
+    expect(existsSync(dir)).toBe(false);
+  });
+
+  it("takes the answers it shares with the generic blueprint", async () => {
+    const run = await bin(
+      "agent",
+      "claude-container",
+      path.join(workspace, "container-lean"),
+      "--no-browser",
+      "--model",
+      "@cf/zai-org/glm-4.7-flash",
+      "--yes",
+      "--dry-run"
+    );
+    expect(run.status).toBe(0);
+  });
+
+  it("refuses a model id that is not one", async () => {
+    const run = await bin(
+      "agent",
+      "claude-container",
+      path.join(workspace, "container-bad-model"),
+      "--model",
+      "anthropic claude",
+      "--yes",
+      "--dry-run"
+    );
+    expect(run.status).toBe(1);
+    expect(run.said).toContain("--model");
+  });
+
+  it("keeps its claude_code sub-agent, and says so to --no-subagent", async () => {
+    const run = await bin(
+      "agent",
+      "claude-container",
+      path.join(workspace, "container-no-subagent"),
+      "--no-subagent",
+      "--yes",
+      "--dry-run"
+    );
+    expect(run.status).toBe(1);
+    expect(run.said).toContain(
+      say.fixedSubAgent("Claude Container", "claude_code")
+    );
+  });
+
+  it("takes no --pr-coordinator: the coordinator is an example now", async () => {
+    const run = await bin(
+      "agent",
+      "claude-container",
+      path.join(workspace, "no-coordinator"),
+      "--pr-coordinator",
+      "--yes",
+      "--dry-run"
+    );
+    expect(run.status).toBe(1);
+  });
+});

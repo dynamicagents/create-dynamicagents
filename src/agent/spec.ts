@@ -7,6 +7,13 @@
 /** A capability the scaffold can install whole — plugin, binding and skill. */
 export type Capability = "browser";
 
+/** A sub-agent a generated agent can delegate to, by its tool name. */
+export type SubAgentName = "general" | "claude_code";
+
+/** Whether an agent delegates to the `general` research sub-agent. */
+export const hasGeneral = (spec: Pick<AgentSpec, "subAgent">): boolean =>
+  spec.subAgent === "general";
+
 export interface AgentSpec {
   /**
    * The tenant id — a **public identifier**. A gatekeeper registers against it
@@ -20,11 +27,20 @@ export interface AgentSpec {
   description: string;
   /** Which agent this was created from — see `./offer/blueprints.ts`. */
   blueprint: string;
-  /** Whether it delegates to the `general` sub-agent. */
-  subAgent: boolean;
+  /**
+   * The sub-agent it delegates to, by the tool name its model calls it by: the
+   * `name` of core's `SubAgentSpec`. `general` is the research sub-agent a
+   * generic agent may have; `claude_code` is the Claude Code session a
+   * `claude-container` agent always has. Absent: it delegates to none.
+   */
+  subAgent?: SubAgentName;
   /** Installed capabilities, in the order they are offered. */
   capabilities: readonly Capability[];
-  /** The Workers AI model id for the turn and for compaction. */
+  /**
+   * The Workers AI model id. A generic agent's turn and compaction both run on
+   * it; a claude-container agent's turn does, while its compaction keeps the
+   * template's full-size model (`templates/claude-container/files.ts`).
+   */
   modelId: string;
 }
 

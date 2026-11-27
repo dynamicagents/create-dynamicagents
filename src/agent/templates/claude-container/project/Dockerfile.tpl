@@ -1,0 +1,95 @@
+# The sandbox image: one container per caller, whose disk holds the caller's
+# scratchpad, driven by its Durable Object through the harness daemon.
+#
+# What `@dynamicagents/plugins/sandbox` requires of an image is in its README:
+# the `agent` user owning /workspace, setpriv, timeout, an `env` that takes
+# `-C`, git, update-ca-certificates, sandbox-shim, and a root-owned session
+# skeleton. The rest is what a session needs to build: Node, a C toolchain
+# for native modules, and ripgrep, which a session's searches reach for.
+#
+# The `containers` entry in wrangler.jsonc builds this file, and passes it the
+# Claude Code version as a build var. wrangler builds for linux/amd64 and
+# rejects any other `--platform`, so never set one here. Every layer is cold
+# start; add to it deliberately.
+
+# `sandbox-shim`, which `@cloudflare/sandbox`'s `Files` and `DirectoryBackup`
+# run through. Its tag follows the `@cloudflare/sandbox` the plugins install.
+FROM docker.io/cloudflare/sandbox:1.0.3 AS shim
+
+FROM docker.io/node:24-trixie-slim
+
+# Node 24, the major this project's own `.nvmrc` names, so what a session
+# builds runs on the Node this project does.
+#
+# `procps` for `pkill`, which a cancelled command is ended with. `xxd` is its
+# own package on Debian 13 (`vim-common` alone leaves none on PATH), and the
+# model reaches for it unprompted; without it, a turn goes on exit 127.
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+  && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    ripgrep \
+    procps \
+    xxd \
+    make \
+    g++ \
+    python3 \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=shim /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
+
+# pnpm and yarn for a project a session sets up that asks for one, as
+# `packageManager` does. Named rather than a bare `corepack enable`, which
+# shims `npm` too and puts a network round trip in front of every `npm` call.
+RUN if command -v corepack > /dev/null; then \
+      corepack enable pnpm yarn; \
+    else \
+      echo "corepack is not bundled with this Node build: skipping pnpm/yarn shims"; \
+    fi
+
+# Claude Code, at `CLAUDE_CODE_VERSION`: the build var in wrangler.jsonc, pinned
+# to the version the claude-code plugin verified, and `npm run check` fails when
+# the two differ, because plugins' egress and stream parser are written against
+# one version's traffic. Without the var the build fails, since an image with no
+# Claude Code is one no session can run in.
+#
+# The `postinstall` is the install (`claude` is published as a placeholder that
+# exits 1 until it runs), and a global install never reads `allowScripts`, so
+# `--allow-scripts` approves it here and `claude --version` fails the build on
+# the placeholder.
+ARG CLAUDE_CODE_VERSION
+RUN test -n "$CLAUDE_CODE_VERSION" \
+  && npm i -g --no-fund --no-audit \
+    --allow-scripts=@anthropic-ai/claude-code \
+    "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+  && claude --version
+
+# The agent, which every command, install and session runs as, and which owns
+# the scratchpad. The skeleton every session's home starts as is root's, so a
+# session starts from this image rather than from what an earlier one left.
+RUN useradd --create-home --home-dir /home/agent --uid 10001 --user-group \
+      --shell /bin/bash agent \
+  && mkdir -p /workspace /etc/da/skel \
+  && chown agent:agent /workspace
+
+# Fail the build, not the first session, on a missing requirement.
+RUN node -e "const m=Number(process.versions.node.split('.')[0]); if (m < 24) { console.error('this image needs Node >= 24, found ' + process.versions.node); process.exit(1); }" \
+  && git --version \
+  && rg --version | head -n1 \
+  && command -v setpriv timeout pkill update-ca-certificates \
+  && env -C / true \
+  && test -x /usr/local/bin/sandbox-shim
+
+COPY container/daemon.mjs /opt/da/daemon.mjs
+
+ENV LANG=C.UTF-8
+WORKDIR /workspace
+
+# The daemon runs as the agent, holding one capability that grants nothing
+# here, so Linux refuses agent processes its `/proc/<pid>/environ`, where the
+# harness's token is. It refuses to start any other way:
+# `@dynamicagents/plugins/sandbox/daemon` says why.
+ENTRYPOINT ["setpriv", "--reuid=10001", "--regid=10001", "--init-groups", \
+  "--inh-caps=-all,+net_bind_service", "--ambient-caps=+net_bind_service", \
+  "--bounding-set=-all,+net_bind_service", "node", "/opt/da/daemon.mjs"]

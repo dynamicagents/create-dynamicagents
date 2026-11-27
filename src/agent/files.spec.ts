@@ -1,3 +1,4 @@
+import { hasGeneral } from "./spec";
 import { describe, expect, it } from "vitest";
 import { projectFiles, type GeneratedFile } from "./files";
 import { specs, variants } from "./fixtures";
@@ -56,7 +57,7 @@ describe.each(variants())("$label", ({ spec }) => {
       `${n.dir}/host.ts`,
       `${n.dir}/workflow.ts`,
       `${n.dir}/agent.ts`,
-      ...(spec.subAgent ? [`${n.dir}/children.ts`] : []),
+      ...(hasGeneral(spec) ? [`${n.dir}/children.ts`] : []),
       `${n.dir}/manifest.ts`,
       `${n.dir}/plugins.ts`,
       `${n.dir}/soul.ts`,
@@ -85,7 +86,7 @@ describe.each(variants())("$label", ({ spec }) => {
   });
 
   it("never writes two consecutive blank lines", () => {
-    // The invariant `./templates/render.ts`'s regions depend on: the blank
+    // The invariant `./templates/shared/render.ts`'s regions depend on: the blank
     // line separating a region from its neighbour belongs *inside* it, so
     // dropping the region leaves exactly one. Nothing normalises blank lines,
     // which is what makes a misplaced marker a failure rather than a reformat.
@@ -103,9 +104,19 @@ describe.each(variants())("$label", ({ spec }) => {
     }
   });
 
+  it("keeps editor settings out of its own format check", () => {
+    // A new project's directory may already hold a `.vscode/` or `.idea/`,
+    // which the install leaves as it found them; `npm run check` runs
+    // `prettier --check .`, which would otherwise fail on somebody's settings
+    // rather than on anything the project wrote.
+    const ignore = at(files, ".prettierignore").split("\n");
+    expect(ignore).toContain(".vscode/");
+    expect(ignore).toContain(".idea/");
+  });
+
   it("nests the agent under src/agents/<tenant>/", () => {
     // Kept even with one agent: a flatter layout would turn a later merge into
-    // another Worker into a rename of every file. See ./templates/merge-notes.ts.
+    // another Worker into a rename of every file. See ./templates/shared/merge-notes.ts.
     expect(n.dir).toBe(`src/agents/${spec.tenant}`);
     expect(paths.some((path) => path.startsWith(`${n.dir}/`))).toBe(true);
   });
@@ -200,7 +211,7 @@ describe.each(variants())("$label", ({ spec }) => {
   it("keeps the shared files free of this agent's name", () => {
     // The support files outside the agent's directory are the same in every
     // generated project, so a merge has nothing to reconcile in them. What
-    // varies out there is wiring, and `./templates/merge-notes.spec.ts` derives that set
+    // varies out there is wiring, and `./templates/shared/merge-notes.spec.ts` derives that set
     // and holds the merge recipe to naming all of it.
     for (const path of ["src/copy.ts", "src/model.ts", "tsconfig.json"]) {
       expect(at(files, path), path).not.toContain(spec.tenant);

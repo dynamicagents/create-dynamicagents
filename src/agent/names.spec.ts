@@ -1,7 +1,7 @@
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { type GeneratedFile, projectFiles } from "./files";
-import { specs } from "./fixtures";
+import { claudeContainerSpecs, specs } from "./fixtures";
 import {
   COLLIDES,
   displayName,
@@ -36,12 +36,15 @@ interface Scope {
 }
 
 /**
- * Every identifier a module declares at its top level — imported, declared or
- * assigned. Parsed with the compiler rather than matched, because an import
- * list in a generated file is laid out by {@link namedFrom} and a regex would
- * read the wrong half of it.
+ * Every identifier a module declares at its top level (imported, declared or
+ * assigned) in order, repeats included. Parsed with the compiler rather than
+ * matched, because an import list in a generated file is laid out by
+ * {@link namedFrom} and a regex would read the wrong half of it. `merges` marks
+ * an interface or a type alias, which may share a name with a value.
  */
-function declared(file: GeneratedFile): string[] {
+function declarations(
+  file: GeneratedFile
+): { name: string; merges: boolean }[] {
   const source = ts.createSourceFile(
     file.path,
     file.contents,
@@ -49,9 +52,11 @@ function declared(file: GeneratedFile): string[] {
     true,
     ts.ScriptKind.TS
   );
-  const found = new Set<string>();
-  const add = (name: ts.Node | undefined): void => {
-    if (name !== undefined && ts.isIdentifier(name)) found.add(name.text);
+  const found: { name: string; merges: boolean }[] = [];
+  const add = (name: ts.Node | undefined, merges = false): void => {
+    if (name !== undefined && ts.isIdentifier(name)) {
+      found.push({ name: name.text, merges });
+    }
   };
   for (const statement of source.statements) {
     if (ts.isImportDeclaration(statement)) {
@@ -70,66 +75,137 @@ function declared(file: GeneratedFile): string[] {
     } else if (
       ts.isClassDeclaration(statement) ||
       ts.isFunctionDeclaration(statement) ||
-      ts.isInterfaceDeclaration(statement) ||
-      ts.isTypeAliasDeclaration(statement) ||
       ts.isEnumDeclaration(statement)
     ) {
       add(statement.name);
+    } else if (
+      ts.isInterfaceDeclaration(statement) ||
+      ts.isTypeAliasDeclaration(statement)
+    ) {
+      add(statement.name, true);
     }
   }
-  return [...found];
+  return found;
 }
 
 /**
- * Every module of a generated project, split into the identifiers the tenant id
- * produced and the identifiers that were there whatever the tenant is.
- *
- * Both shapes, because the imports differ: `children.ts` only exists with a
- * sub-agent, and `plugins.ts` imports a plugin only when one was asked for.
+ * The identifiers a module uses without declaring them anywhere: the globals it
+ * reaches, `console` and `crypto` and the like. A top-level name the tenant id
+ * produces shadows one of these, which is no duplicate declaration and still a
+ * project that does not compile: `console.info` on an imported agent.
+ */
+function globalsUsed(file: GeneratedFile): string[] {
+  const source = ts.createSourceFile(
+    file.path,
+    file.contents,
+    ts.ScriptTarget.ESNext,
+    true,
+    ts.ScriptKind.TS
+  );
+  const used = new Set<string>();
+  const bound = new Set<string>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node)) {
+      const parent = node.parent as ts.Node & { name?: ts.Node };
+      const named = parent.name === node;
+      if (ts.isShorthandPropertyAssignment(parent) || !named) {
+        const member =
+          (ts.isPropertyAccessExpression(parent) && parent.name === node) ||
+          (ts.isQualifiedName(parent) && parent.right === node) ||
+          (ts.isImportSpecifier(parent) && parent.propertyName === node) ||
+          (ts.isExportSpecifier(parent) && parent.propertyName === node);
+        if (!member) used.add(node.text);
+      } else {
+        bound.add(node.text);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return [...used].filter((name) => !bound.has(name));
+}
+
+/** Every identifier a module declares at its top level, once each. */
+const declared = (file: GeneratedFile): string[] => [
+  ...new Set(declarations(file).map((entry) => entry.name))
+];
+
+/** The names a module declares twice: TS2300 in the generated project. */
+const twice = (file: GeneratedFile): string[] => {
+  const values = declarations(file)
+    .filter((entry) => !entry.merges)
+    .map((entry) => entry.name);
+  return [...new Set(values.filter((name, i) => values.indexOf(name) !== i))];
+};
+
+/**
+ * Every shape of every blueprint, because the imports differ: `children.ts`
+ * only exists with a sub-agent, `plugins.ts` imports a plugin only when one was
+ * asked for, and a claude-container project's modules import what a generic
+ * one's never do. A shape left out here is a set of tenant ids nobody refuses.
+ */
+const SHAPES = [
+  specs.full,
+  specs.bare,
+  claudeContainerSpecs.full,
+  claudeContainerSpecs.bare
+];
+
+/**
+ * Every module of every one of {@link SHAPES}, split into the identifiers the
+ * tenant id produced and the identifiers that were there whatever the tenant
+ * is: declared or imported, or a global the module reaches.
  */
 const scopes = (): Scope[] => {
-  const s = names(SENTINEL);
   const result: Scope[] = [];
-  for (const shape of [specs.full, specs.bare]) {
+  for (const shape of SHAPES) {
     const spec = { ...shape, tenant: SENTINEL, name: displayName(SENTINEL) };
     for (const file of projectFiles(spec)) {
       if (!file.path.endsWith(".ts")) continue;
       const ids = declared(file);
-      const derived = ids.filter(
-        (id) => id.includes(s.pascal) || id === s.camel
-      );
+      // In any case and with anything around it: `zebraManifest` is as
+      // derived as `ZebraAgent` and `ZEBRA_WORKFLOW`.
+      const derived = ids.filter((id) => id.toLowerCase().includes(SENTINEL));
       result.push({
         path: file.path,
         derived,
-        taken: ids.filter((id) => !derived.includes(id))
+        taken: [...ids, ...globalsUsed(file)].filter(
+          (id) => !derived.includes(id)
+        )
       });
     }
   }
   return result;
 };
 
-/** `TaskHost` → `task-host`, and `TaskHost` without `Host` → `task`. */
-const kebab = (identifier: string): string =>
-  identifier
-    .split(/(?=[A-Z])/)
+/**
+ * The words of an identifier, as a tenant id would spell them: `TaskHost` and
+ * `TASK_HOST` are both `task`, `host`.
+ */
+const words = (identifier: string): string[] =>
+  (/^[A-Z0-9_]+$/.test(identifier)
+    ? identifier.split("_")
+    : identifier.split(/(?=[A-Z])/)
+  )
     .filter((part) => part !== "")
-    .join("-")
-    .toLowerCase();
-
-const SUFFIXES = ["Host", "Workflow", "Agent", "Child"];
+    .map((part) => part.toLowerCase());
 
 /**
- * The tenant ids worth testing: every identifier the generated modules already
- * have in scope, read backwards through the derivations — as a camelCase name,
- * and as a class name with its suffix removed. Anything a tenant id could not
- * have produced is filtered out by {@link names} not reproducing it.
+ * The tenant ids worth testing: every run of consecutive words in an
+ * identifier the generated modules already have in scope. A derived name is
+ * the tenant's words with a prefix or a suffix around them, in one of three
+ * cases, so whatever it could land on is one of these runs. Anything a tenant
+ * id could not have produced is filtered out by {@link names} not reproducing
+ * it.
  */
 const candidates = (taken: string[]): string[] => {
   const out = new Set<string>();
   for (const id of taken) {
-    out.add(kebab(id));
-    for (const suffix of SUFFIXES) {
-      if (id.endsWith(suffix)) out.add(kebab(id.slice(0, -suffix.length)));
+    const parts = words(id);
+    for (let from = 0; from < parts.length; from++) {
+      for (let to = from + 1; to <= parts.length; to++) {
+        out.add(parts.slice(from, to).join("-"));
+      }
     }
   }
   return [...out].filter(
@@ -159,9 +235,12 @@ const hazards = (): Map<string, string[]> => {
       for (const derived of scope.derived) {
         const instance = derived
           .replace(s.pascal, n.pascal)
-          .replace(s.camel, n.camel);
+          .replace(s.camel, n.camel)
+          .replace(s.screaming, n.screaming);
         if (!scope.taken.includes(instance)) continue;
-        found.set(tenant, [...(found.get(tenant) ?? []), instance]);
+        found.set(tenant, [
+          ...new Set([...(found.get(tenant) ?? []), instance])
+        ]);
       }
     }
   }
@@ -300,6 +379,31 @@ describe("a tenant id the generated code already uses", () => {
     // importing something is an id refused for nothing.
     expect([...COLLIDES.keys()].sort()).toEqual([...hazards().keys()].sort());
   });
+
+  it("writes a project that declares each name once, for every id it accepts", () => {
+    // The scans above reason through the derivations; this one does not. It
+    // writes every shape for every candidate the validator lets through and
+    // looks for a module declaring one name twice, so a derivation nobody
+    // modelled is caught here rather than in somebody's first scaffold.
+    const accepted = candidates(
+      scopes().flatMap((scope) => scope.taken)
+    ).filter((tenant) => validateTenant(tenant) === undefined);
+    const found: string[] = [];
+    for (const tenant of accepted) {
+      for (const shape of SHAPES) {
+        const spec = { ...shape, tenant, name: displayName(tenant) };
+        for (const file of projectFiles(spec)) {
+          if (!file.path.endsWith(".ts")) continue;
+          for (const name of twice(file)) {
+            found.push(`${tenant}: ${file.path} declares ${name} twice`);
+          }
+        }
+      }
+    }
+    expect([...new Set(found)]).toEqual([]);
+    // Every candidate, every shape, every module parsed: seconds rather than
+    // milliseconds, and slower on a CI runner than the default timeout allows.
+  }, 60_000);
 
   it("leaves alone what only looks taken", () => {
     // `browser` is imported in `plugins.ts` and `worker` in the specs, but

@@ -17,8 +17,10 @@ import {
   noTerminal,
   notEmpty,
   notInstalled,
+  nextStepsContainer,
   otherModelLabel,
-  outroLine,
+  NEXT_STEPS,
+  OUTRO,
   tenantHelp,
   tree,
   unknownBlueprint,
@@ -452,12 +454,52 @@ describe("the refusals", () => {
 });
 
 describe("finishByHand", () => {
+  const written = [
+    "src/index.ts",
+    "src/agents/support/agent.ts",
+    "package.json"
+  ];
+
   it("carries the problem and the two commands that finish it", () => {
-    const text = finishByHand("support", "npm install failed");
+    const text = finishByHand("support", "npm install failed", written);
     expect(text).toContain("npm install failed");
     expect(text).toContain("cd support");
     expect(text).toContain("npm install");
     expect(text).toContain("npx wrangler types");
+  });
+
+  it("ends with the format every install runs, after the install", () => {
+    const text = finishByHand("support", "npm install failed", written);
+    expect(text.indexOf("prettier --write")).toBeGreaterThan(
+      text.indexOf("npm install")
+    );
+  });
+
+  it("formats only the entries it wrote, never the whole directory", () => {
+    // A `.vscode` or `.idea` the directory already held is the user's, and
+    // the install's own format leaves it alone; so does this.
+    const last = finishByHand("support", "npm install failed", written)
+      .trim()
+      .split("\n")
+      .at(-1)!;
+    expect(last).toBe(
+      "  npx prettier --write --ignore-unknown src package.json"
+    );
+    expect(last).not.toMatch(/ \.$|npm run format/);
+  });
+});
+
+describe("nextStepsContainer", () => {
+  it("says what only the operator can supply, and the tenant to register", () => {
+    const text = nextStepsContainer("coordinator", "pr-bot");
+    expect(text).toContain("cd coordinator");
+    expect(text).toContain(".env.example");
+    expect(text).toContain("bucket");
+    expect(text).toContain("`pr-bot`");
+    // Its soul is written already, so it is not handed back as homework.
+    expect(text).not.toContain("soul.ts");
+    // It works on no repository, so it asks for no GitHub token.
+    expect(text).not.toContain("GitHub");
   });
 });
 
@@ -468,6 +510,15 @@ describe("notInstalled", () => {
     const text = notInstalled("Support");
     expect(text).toContain("Support");
     expect(text).not.toMatch(/ready/i);
-    expect(outroLine("Support")).toMatch(/ready/i);
+    expect(OUTRO.generic?.("Support")).toMatch(/ready/i);
+  });
+});
+
+describe("what comes after the install, per blueprint", () => {
+  it("has next steps and an outro for every blueprint the menu offers", () => {
+    for (const blueprint of BLUEPRINTS) {
+      expect(NEXT_STEPS[blueprint.value], blueprint.value).toBeDefined();
+      expect(OUTRO[blueprint.value], blueprint.value).toBeDefined();
+    }
   });
 });

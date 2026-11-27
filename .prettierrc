@@ -1,10 +1,41 @@
 {
   "trailingComma": "none",
   "overrides": [
-    { "files": "*.ts.tpl", "options": { "parser": "typescript" } },
-    { "files": "*.md.tpl", "options": { "parser": "markdown" } },
-    { "files": "*.jsonc.tpl", "options": { "parser": "jsonc" } },
-    { "files": "*.json.tpl", "options": { "parser": "json" } },
-    { "files": "*.js.tpl", "options": { "parser": "babel" } }
+    {
+      "files": "*.ts.tpl",
+      "options": {
+        "parser": "typescript"
+      }
+    },
+    {
+      "files": "*.md.tpl",
+      "options": {
+        "parser": "markdown"
+      }
+    },
+    {
+      "files": "*.jsonc.tpl",
+      "options": {
+        "parser": "jsonc"
+      }
+    },
+    {
+      "files": "*.json.tpl",
+      "options": {
+        "parser": "json"
+      }
+    },
+    {
+      "files": "*.js.tpl",
+      "options": {
+        "parser": "babel"
+      }
+    },
+    {
+      "files": "*.mjs.tpl",
+      "options": {
+        "parser": "babel"
+      }
+    }
   ]
 }

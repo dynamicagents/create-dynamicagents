@@ -1,0 +1,52 @@
+/**
+ * What a generated `package.json` asks for: the pins in `src/train.ts`, narrowed
+ * to what this particular agent imports.
+ *
+ * In `templates/shared/` beside `text.ts`: this folder is what a template
+ * reads, and each blueprint's own directory is what a template writes.
+ * `generic/project/package-json.ts` is the one caller.
+ *
+ * Pure, and a function of the spec rather than a constant, because an
+ * uninstalled capability should not leave a dependency behind: a project with
+ * no plugins does not depend on `@dynamicagents/plugins`, and one with no
+ * sub-agent does not depend on `zod`.
+ */
+import { RUNTIME, TOOLCHAIN, TRAIN } from "../../../train";
+import type { AgentSpec } from "../../spec";
+import { hasGeneral } from "../../spec";
+
+/** npm keeps a manifest's dependency maps sorted, so these are too. */
+const sorted = (map: Record<string, string>): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(map).sort(([a], [b]) => a.localeCompare(b))
+  );
+
+/** The runtime half, in the order npm will keep it. */
+export function dependenciesFor(
+  spec: Pick<AgentSpec, "subAgent" | "capabilities">
+): Record<string, string> {
+  const deps: Record<string, string> = {
+    "@dynamicagents/core": TRAIN.core,
+    "@cloudflare/computer": RUNTIME["@cloudflare/computer"],
+    "@cloudflare/think": RUNTIME["@cloudflare/think"],
+    agents: RUNTIME.agents,
+    ai: RUNTIME.ai,
+    // Unconditional, like Think itself: Think imports `agents/skills/runner`,
+    // which imports this, so it is in every generated project's module graph
+    // whatever the agent installs. `agents` and `@cloudflare/computer` declare
+    // it only as an *optional* peer, so a manifest that leaves it out is a
+    // project relying on npm to install a peer nobody named.
+    "just-bash": RUNTIME["just-bash"],
+    "workers-ai-provider": RUNTIME["workers-ai-provider"],
+    "@a2a-js/sdk": RUNTIME["@a2a-js/sdk"]
+  };
+  if (hasGeneral(spec)) deps.zod = RUNTIME.zod;
+  if (spec.capabilities.length > 0) {
+    deps["@dynamicagents/plugins"] = TRAIN.plugins;
+  }
+  return sorted(deps);
+}
+
+/** The toolchain half: what the generated config files are written against. */
+export const devDependenciesFor = (): Record<string, string> =>
+  sorted({ ...TOOLCHAIN });

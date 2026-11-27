@@ -31,6 +31,6 @@
   // `vitest.config.ts` is named too, because it is the only source file outside
   // `src/` and the `.tpl` loader it declares is load-bearing for every spec.
   // The `.tpl` files themselves are not here and must not be: they are text,
-  // and `src/agent/templates/tpl.d.ts` is what says so.
+  // and `src/agent/templates/shared/tpl.d.ts` is what says so.
   "include": ["src/**/*.ts", "vitest.config.ts"]
 }

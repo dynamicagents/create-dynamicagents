@@ -25,18 +25,43 @@ const base = (tenant: string): AgentSpec => ({
   name: displayName(tenant),
   description: "Answers product questions from the handbook.",
   blueprint: "generic",
-  subAgent: true,
+  subAgent: "general",
   capabilities: [],
   modelId: DEFAULT_MODEL_ID
 });
+
+/** A spec with no sub-agent at all. */
+const withoutSubAgent = (spec: AgentSpec): AgentSpec => {
+  const { subAgent: _, ...rest } = spec;
+  return rest;
+};
 
 export const specs = {
   /** Everything on: the sub-agent and every capability. */
   full: { ...base("support"), capabilities: ["browser"] } as AgentSpec,
   /** Nothing but the agent itself. */
-  bare: { ...base("support"), subAgent: false } as AgentSpec,
+  bare: withoutSubAgent(base("support")),
   /** A multi-word tenant id, which every derived name has to handle. */
   multiWord: base("release-notes")
+} as const;
+
+/**
+ * The claude-container blueprint, with the browser and without it. Apart from
+ * {@link specs} because a generic spec iterating those has nothing to say about
+ * this blueprint's files; a spec about every blueprint reads both.
+ */
+export const claudeContainerSpecs = {
+  full: {
+    ...base("support"),
+    blueprint: "claude-container",
+    subAgent: "claude_code",
+    capabilities: ["browser"]
+  } as AgentSpec,
+  bare: {
+    ...base("support"),
+    blueprint: "claude-container",
+    subAgent: "claude_code"
+  } as AgentSpec
 } as const;
 
 /** Each fixture with a label, for `describe.each`. */
