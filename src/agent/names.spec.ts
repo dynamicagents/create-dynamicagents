@@ -1,7 +1,7 @@
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { type GeneratedFile, projectFiles } from "./files";
-import { specs } from "./fixtures";
+import { claudeContainerSpecs, specs } from "./fixtures";
 import {
   COLLIDES,
   displayName,
@@ -84,19 +84,27 @@ function declared(file: GeneratedFile): string[] {
  * Every module of a generated project, split into the identifiers the tenant id
  * produced and the identifiers that were there whatever the tenant is.
  *
- * Both shapes, because the imports differ: `children.ts` only exists with a
- * sub-agent, and `plugins.ts` imports a plugin only when one was asked for.
+ * Every shape of every blueprint, because the imports differ: `children.ts`
+ * only exists with a sub-agent, `plugins.ts` imports a plugin only when one was
+ * asked for, and a claude-container project's modules import what a generic
+ * one's never do. A shape left out here is a set of tenant ids nobody refuses.
  */
 const scopes = (): Scope[] => {
   const s = names(SENTINEL);
   const result: Scope[] = [];
-  for (const shape of [specs.full, specs.bare]) {
+  for (const shape of [
+    specs.full,
+    specs.bare,
+    claudeContainerSpecs.full,
+    claudeContainerSpecs.bare
+  ]) {
     const spec = { ...shape, tenant: SENTINEL, name: displayName(SENTINEL) };
     for (const file of projectFiles(spec)) {
       if (!file.path.endsWith(".ts")) continue;
       const ids = declared(file);
       const derived = ids.filter(
-        (id) => id.includes(s.pascal) || id === s.camel
+        (id) =>
+          id.includes(s.pascal) || id === s.camel || id.includes(s.screaming)
       );
       result.push({
         path: file.path,
@@ -108,28 +116,34 @@ const scopes = (): Scope[] => {
   return result;
 };
 
-/** `TaskHost` → `task-host`, and `TaskHost` without `Host` → `task`. */
-const kebab = (identifier: string): string =>
-  identifier
-    .split(/(?=[A-Z])/)
+/**
+ * The words of an identifier, as a tenant id would spell them: `TaskHost` and
+ * `TASK_HOST` are both `task`, `host`.
+ */
+const words = (identifier: string): string[] =>
+  (/^[A-Z0-9_]+$/.test(identifier)
+    ? identifier.split("_")
+    : identifier.split(/(?=[A-Z])/)
+  )
     .filter((part) => part !== "")
-    .join("-")
-    .toLowerCase();
-
-const SUFFIXES = ["Host", "Workflow", "Agent", "Child"];
+    .map((part) => part.toLowerCase());
 
 /**
- * The tenant ids worth testing: every identifier the generated modules already
- * have in scope, read backwards through the derivations — as a camelCase name,
- * and as a class name with its suffix removed. Anything a tenant id could not
- * have produced is filtered out by {@link names} not reproducing it.
+ * The tenant ids worth testing: every run of consecutive words in an
+ * identifier the generated modules already have in scope. A derived name is
+ * the tenant's words with a prefix or a suffix around them, in one of three
+ * cases, so whatever it could land on is one of these runs. Anything a tenant
+ * id could not have produced is filtered out by {@link names} not reproducing
+ * it.
  */
 const candidates = (taken: string[]): string[] => {
   const out = new Set<string>();
   for (const id of taken) {
-    out.add(kebab(id));
-    for (const suffix of SUFFIXES) {
-      if (id.endsWith(suffix)) out.add(kebab(id.slice(0, -suffix.length)));
+    const parts = words(id);
+    for (let from = 0; from < parts.length; from++) {
+      for (let to = from + 1; to <= parts.length; to++) {
+        out.add(parts.slice(from, to).join("-"));
+      }
     }
   }
   return [...out].filter(
@@ -159,9 +173,12 @@ const hazards = (): Map<string, string[]> => {
       for (const derived of scope.derived) {
         const instance = derived
           .replace(s.pascal, n.pascal)
-          .replace(s.camel, n.camel);
+          .replace(s.camel, n.camel)
+          .replace(s.screaming, n.screaming);
         if (!scope.taken.includes(instance)) continue;
-        found.set(tenant, [...(found.get(tenant) ?? []), instance]);
+        found.set(tenant, [
+          ...new Set([...(found.get(tenant) ?? []), instance])
+        ]);
       }
     }
   }

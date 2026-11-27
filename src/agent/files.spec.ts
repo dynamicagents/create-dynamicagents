@@ -104,6 +104,16 @@ describe.each(variants())("$label", ({ spec }) => {
     }
   });
 
+  it("keeps editor settings out of its own format check", () => {
+    // A new project's directory may already hold a `.vscode/` or `.idea/`,
+    // which the install leaves as it found them; `npm run check` runs
+    // `prettier --check .`, which would otherwise fail on somebody's settings
+    // rather than on anything the project wrote.
+    const ignore = at(files, ".prettierignore").split("\n");
+    expect(ignore).toContain(".vscode/");
+    expect(ignore).toContain(".idea/");
+  });
+
   it("nests the agent under src/agents/<tenant>/", () => {
     // Kept even with one agent: a flatter layout would turn a later merge into
     // another Worker into a rename of every file. See ./templates/shared/merge-notes.ts.

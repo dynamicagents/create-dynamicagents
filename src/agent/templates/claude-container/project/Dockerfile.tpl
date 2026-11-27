@@ -7,8 +7,8 @@
 # skeleton. The rest is what a session needs to build: Node, a C toolchain
 # for native modules, and ripgrep for the file tools' searches.
 #
-# Each `containers[]` entry in wrangler.jsonc builds its own image from this
-# file; wrangler.jsonc says how they differ. wrangler builds for linux/amd64 and
+# The `containers` entry in wrangler.jsonc builds this file, and passes it the
+# Claude Code version as a build var. wrangler builds for linux/amd64 and
 # rejects any other `--platform`, so never set one here. Every layer is cold
 # start; add to it deliberately.
 
@@ -48,27 +48,25 @@ RUN if command -v corepack > /dev/null; then \
       echo "corepack is not bundled with this Node build — skipping pnpm/yarn shims"; \
     fi
 
-# Claude Code, for `claude-container`'s image: `CLAUDE_CODE_VERSION` is a
-# build var on that entry in wrangler.jsonc, pinned to the version the
-# claude-code plugin verified, and `npm run check` fails when the two differ —
-# plugins' egress and stream parser are written against one version's traffic.
+# Claude Code, at `CLAUDE_CODE_VERSION`: the build var in wrangler.jsonc, pinned
+# to the version the claude-code plugin verified, and `npm run check` fails when
+# the two differ, because plugins' egress and stream parser are written against
+# one version's traffic. Without the var the build fails, since an image with no
+# Claude Code is one no session can run in.
 #
-# The `postinstall` is the install — `claude` is published as a placeholder that
-# exits 1 until it runs — and a global install never reads `allowScripts`, so
+# The `postinstall` is the install (`claude` is published as a placeholder that
+# exits 1 until it runs), and a global install never reads `allowScripts`, so
 # `--allow-scripts` approves it here and `claude --version` fails the build on
 # the placeholder.
-ARG CLAUDE_CODE_VERSION=""
-RUN if [ -n "$CLAUDE_CODE_VERSION" ]; then \
-      npm i -g --no-fund --no-audit \
-        --allow-scripts=@anthropic-ai/claude-code \
-        "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
-      && claude --version; \
-    else \
-      echo "no CLAUDE_CODE_VERSION build arg: this image has no Claude Code"; \
-    fi
+ARG CLAUDE_CODE_VERSION
+RUN test -n "$CLAUDE_CODE_VERSION" \
+  && npm i -g --no-fund --no-audit \
+    --allow-scripts=@anthropic-ai/claude-code \
+    "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+  && claude --version
 
 # The agent, which every command, install and session runs as, and which owns
-# the checkouts. The skeleton every session's home starts as is root's, so a
+# the scratchpad. The skeleton every session's home starts as is root's, so a
 # session starts from this image rather than from what an earlier one left.
 RUN useradd --create-home --home-dir /home/agent --uid 10001 --user-group \
       --shell /bin/bash agent \

@@ -45,6 +45,25 @@ export const specs = {
   multiWord: base("release-notes")
 } as const;
 
+/**
+ * The claude-container blueprint, with the browser and without it. Apart from
+ * {@link specs} because a generic spec iterating those has nothing to say about
+ * this blueprint's files; a spec about every blueprint reads both.
+ */
+export const claudeContainerSpecs = {
+  full: {
+    ...base("support"),
+    blueprint: "claude-container",
+    subAgent: "claude_code",
+    capabilities: ["browser"]
+  } as AgentSpec,
+  bare: {
+    ...base("support"),
+    blueprint: "claude-container",
+    subAgent: "claude_code"
+  } as AgentSpec
+} as const;
+
 /** Each fixture with a label, for `describe.each`. */
 export const variants = (): { label: string; spec: AgentSpec }[] =>
   Object.entries(specs).map(([label, spec]) => ({ label, spec }));

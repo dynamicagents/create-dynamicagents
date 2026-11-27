@@ -108,7 +108,9 @@ const RESERVED = new Set([
  * createA2AWorker(…)`. `task` generates `class TaskHost extends TaskHost`.
  * Neither project parses, and neither is caught by the two sets above — these
  * are not words the language or core's classes reserve, they are names the
- * templates happen to import.
+ * templates happen to import. A claude-container project also names its config
+ * after the tenant in capitals (`CLAUDE_CONTAINER`), so `memory` lands on the
+ * `MEMORY` its agent imports beside it.
  *
  * So this is derived data rather than judgement. `names.spec.ts` parses every
  * module of a generated project with the TypeScript compiler, instantiates
@@ -119,14 +121,28 @@ const RESERVED = new Set([
 export const COLLIDES = new Map([
   ["a2a", "a2a"],
   ["agent-model", "agentModel"],
+  ["claude-code-session", "CLAUDE_CODE_SESSION"],
   ["create-a2-a-worker", "createA2AWorker"],
   ["define-agent", "defineAgent"],
   ["handle-artifact-route", "handleArtifactRoute"],
   ["host-manifest", "hostManifest"],
+  ["label", "LABEL"],
   ["manifest", "manifest"],
+  ["memory", "MEMORY"],
+  ["parent-plugins", "parentPlugins"],
   ["plugins", "plugins"],
+  ["retry-brief", "RETRY_BRIEF"],
+  ["sandbox-adapter", "SANDBOX_ADAPTER"],
+  ["sandbox-instance", "SANDBOX_INSTANCE"],
+  ["sandbox-reclaim-ms", "SANDBOX_RECLAIM_MS"],
+  ["sandbox-shell", "sandboxShell"],
+  ["scratch-sandbox", "scratchSandbox"],
+  ["share-file-tool", "shareFileTool"],
+  ["soul", "SOUL"],
   ["step", "StepAgent"],
   ["task", "TaskHost"],
+  ["task-reconcile", "TASK_RECONCILE"],
+  ["think-file-tools", "THINK_FILE_TOOLS"],
   ["transient-chat-error", "transientChatError"],
   ["turn-task", "turnTask"]
 ]);

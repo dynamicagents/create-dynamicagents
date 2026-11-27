@@ -1,4 +1,8 @@
-import { MERGE_CAVEAT, mergeSteps } from "../../shared/merge-notes";
+import {
+  claudeContainerSteps,
+  MERGE_CAVEAT,
+  mergeSteps
+} from "../../shared/merge-notes";
 import type { AgentNames, AgentSpec } from "../../../spec";
 import { hasGeneral } from "../../../spec";
 import { render } from "../../shared/render";
@@ -81,6 +85,11 @@ export function agentsMd(spec: AgentSpec, n: AgentNames): string {
     mergeSteps(n.dir).map((step) => [`\`${step.path}\``, step.what])
   );
 
+  const claudeContainerMerge = mdTable(
+    ["file", "what to do"],
+    claudeContainerSteps.map((step) => [`\`${step.path}\``, step.what])
+  );
+
   return render(source, {
     tokens: {
       TENANT: spec.tenant,
@@ -91,6 +100,7 @@ export function agentsMd(spec: AgentSpec, n: AgentNames): string {
       WHERE_TABLE: where,
       TESTS_TABLE: tests,
       MERGE_TABLE: merge,
+      CLAUDE_CONTAINER_MERGE_TABLE: claudeContainerMerge,
       MERGE_CAVEAT
     }
   });

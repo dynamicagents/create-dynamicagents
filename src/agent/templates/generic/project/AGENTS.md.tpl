@@ -95,6 +95,11 @@ To bring another generated agent in:
 
 $MERGE_TABLE
 
+A claude-container agent reaches outside its directory, and its support files
+are not this project's, so it brings more:
+
+$CLAUDE_CONTAINER_MERGE_TABLE
+
 Then `npm run types && npm run check && npm test`.
 
 **$MERGE_CAVEAT**

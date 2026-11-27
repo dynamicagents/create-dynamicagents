@@ -17,10 +17,11 @@
  *   included, so a merge moves one folder;
  * - outside it, the support files are tenant-independent and byte-identical in
  *   every project of one blueprint: the toolchain config, `src/copy.ts`,
- *   `src/model.ts`, the test tsconfig. Across blueprints, a claude-container
- *   project's `src/copy.ts` and `src/model.ts` export everything a generic
- *   one's do and more, so the first step says which way they go. What is left
- *   is wiring, and short: the Worker entry, the deployment
+ *   `src/model.ts`, the test tsconfig. Across blueprints they are not, and a
+ *   claude-container agent reaches past its directory besides, so what it
+ *   brings into a generic project is {@link claudeContainerSteps}, held to
+ *   the projects the same way. What is left is wiring, and short: the Worker
+ *   entry, the deployment
  *   card, the wrangler and vitest configs, the dependency list, the secrets,
  *   the suite and the two guides. Each one of them is a step below, and
  *   `merge-notes.spec.ts` derives that set rather than trusting this list;
@@ -46,7 +47,7 @@ export interface MergeStep {
 export const mergeSteps = (dir: string): readonly MergeStep[] => [
   {
     path: `${dir}/`,
-    what: "Copy the whole directory across. Nothing in it reaches outside itself except `@/copy` and `@/model`, which a project of the same blueprint already has. A claude-container agent arriving in a generic project brings its own `src/copy.ts` and `src/model.ts` too: they replace the generic ones, which lack what it imports."
+    what: "Copy the whole directory across. Nothing in a generic agent's reaches outside itself except `@/copy` and `@/model`, which this project already has. A claude-container agent reaches further: the table after this one is what it brings."
   },
   {
     path: "src/index.ts",
@@ -91,6 +92,68 @@ export const mergeSteps = (dir: string): readonly MergeStep[] => [
   {
     path: "AGENTS.md",
     what: "The same, starting with the heading and the tenant id in its first lines — and keep this recipe in it, because the next merge is read from there."
+  }
+];
+
+/**
+ * What a claude-container agent brings into a generic project, beside
+ * {@link mergeSteps}: the modules outside its directory that it imports or its
+ * image is built from, and what its own wiring holds that a generic agent's
+ * does not. `merge-notes.spec.ts` derives this set too, from every file of a
+ * claude-container project that a generic one lacks or spells differently.
+ */
+export const claudeContainerSteps: readonly MergeStep[] = [
+  {
+    path: "src/config.ts",
+    what: "Copy it across: the agent's model, its sessions' model and limits and its sandbox's size live here rather than in its directory, and its modules import `@/config`."
+  },
+  {
+    path: "src/workspace/",
+    what: "Copy it across whole: the sandbox, the scratchpad and the author its commits carry, which the agent imports as `@/workspace/*`."
+  },
+  {
+    path: "src/sandbox-daemon.ts",
+    what: "Copy it across: it is what `scripts/build-daemon.mjs` bundles into the image."
+  },
+  {
+    path: "src/copy.ts",
+    what: "Replace the generic one with it: it exports everything the generic one does, and what the agent's soul imports besides."
+  },
+  {
+    path: "src/model.ts",
+    what: "Replace the generic one with it: it exports everything the generic one does, and reaches AI Gateway's catalog besides, which `src/config.ts` may name."
+  },
+  {
+    path: "Dockerfile",
+    what: "Copy it across: the sandbox's image is built from it."
+  },
+  {
+    path: ".dockerignore",
+    what: "Copy it across beside the `Dockerfile`."
+  },
+  {
+    path: "scripts/",
+    what: "Copy it across: `build-daemon.mjs` bundles the daemon before every deploy, and `verify-container-env.mjs` is the Claude Code pin check."
+  },
+  {
+    path: "wrangler.jsonc",
+    what: "Take its `build` command, its `limits`, its `containers` entry with the `CLAUDE_CODE_VERSION` build var, its sandbox's Durable Object binding with that class in the **new** migration tag, its `SANDBOX_BACKUPS` bucket, which `npx wrangler r2 bucket create` makes before the first deploy, and its `CLAUDE_CODE_OAUTH_TOKEN_*` entries under `secrets.required`."
+  },
+  {
+    path: "package.json",
+    what: "Take its `verify:container-env` script, and end `check` with it as its own `check` does."
+  },
+  {
+    path: ".env.example",
+    what: "Take its `CLAUDE_CODE_OAUTH_TOKEN_*` entries and what it says about them: a session runs on one of those subscriptions."
+  },
+  {
+    path: ".gitignore",
+    what: "Add `/container/`, where the daemon bundle is built."
+  },
+  {
+    path: "vitest.config.ts",
+    what: "Take the placeholder `CLAUDE_CODE_OAUTH_TOKEN_*` values it sets for the suite, beside its bindings."
   }
 ];
 

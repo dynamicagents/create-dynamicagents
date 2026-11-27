@@ -11,10 +11,9 @@ import { TASK_RECONCILE } from "@/config";
  * `claude-container`'s pipeline: one step, the whole task, on the caller's own
  * `ClaudeContainerAgent`.
  *
- * Planning and approving are the agent's tools, not steps here: whether a
- * change gets a plan, and whether the caller approves it before it is built, is
- * the agent's to judge and the caller's to set — see `./soul.ts`. A step every
- * task needs, whatever it asks, goes here.
+ * Whether a task takes a session, and which files it shares, is the agent's to
+ * judge within that turn: see `./soul.ts`. A step every task needs, whatever
+ * it asks, goes here.
  */
 export class ClaudeContainerWorkflow extends TaskWorkflow<Env> {
   /** The step agent's binding. A test worker points it at a scripted one. */

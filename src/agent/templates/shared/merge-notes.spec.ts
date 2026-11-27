@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { projectFiles } from "../../files";
-import { specs } from "../../fixtures";
-import { MERGE_CAVEAT, mergeSteps } from "./merge-notes";
-import { copyTs, modelTs } from "../generic/project/shared";
-import { TEMPLATE } from "../claude-container/template";
+import { claudeContainerSpecs, specs } from "../../fixtures";
+import {
+  claudeContainerSteps,
+  MERGE_CAVEAT,
+  type MergeStep,
+  mergeSteps
+} from "./merge-notes";
 import { names } from "../../names";
 import type { AgentSpec } from "../../spec";
 
@@ -53,6 +56,29 @@ const wiring = (): string[] => {
   return [...differs].sort();
 };
 
+/**
+ * What a claude-container agent brings into a generic project, derived: every
+ * file outside the agent's directory of a claude-container project that the
+ * generic project of the same answers lacks or spells differently. Both
+ * shapes, because the browser changes the wiring of each.
+ */
+const claudeContainerWiring = (): string[] => {
+  const differs = new Set<string>();
+  for (const [generic, container] of [
+    [specs.full, claudeContainerSpecs.full],
+    [specs.bare, claudeContainerSpecs.bare]
+  ] as const) {
+    const base = outside(generic);
+    for (const [path, contents] of outside(container)) {
+      if (base.get(path) !== contents) differs.add(path);
+    }
+  }
+  return [...differs].sort();
+};
+
+const under = (steps: readonly MergeStep[], path: string): boolean =>
+  steps.some((step) => step.path === path || path.startsWith(step.path));
+
 const covered = (path: string): boolean =>
   mergeSteps(n.dir).some(
     (step) => step.path === path || path.startsWith(step.path)
@@ -96,21 +122,34 @@ describe("mergeSteps", () => {
     }
   });
 
-  it("says which support files a claude-container agent brings along", () => {
-    // Same-blueprint projects share these byte for byte; across blueprints
-    // they differ, and the generic ones lack what a claude-container agent
-    // imports. A recipe that called them shared would end in a missing export.
-    const first = mergeSteps(n.dir)[0]!.what;
-    for (const [path, generic, container] of [
-      ["src/copy.ts", copyTs, TEMPLATE.copyTs],
-      ["src/model.ts", modelTs, TEMPLATE.modelTs]
-    ] as const) {
-      if (generic === container) continue;
-      expect(first, path).toContain(`\`${path}\``);
+  it("names everything a claude-container agent brings into a generic project", () => {
+    // Derived as above: a claude-container file outside the agent's directory
+    // that a generic project lacks, or spells differently, is one a merge has
+    // to bring or reconcile, so it fails here until a step names it.
+    const steps = [...mergeSteps(n.dir), ...claudeContainerSteps];
+    for (const path of claudeContainerWiring()) {
+      expect(under(steps, path), `${path} is not in the merge recipe`).toBe(
+        true
+      );
     }
-    expect(first).toMatch(
-      /claude-container agent arriving in a generic project/
-    );
+  });
+
+  it("names nothing a claude-container agent does not bring", () => {
+    const wired = claudeContainerWiring();
+    for (const step of claudeContainerSteps) {
+      const real = wired.some(
+        (path) => path === step.path || path.startsWith(step.path)
+      );
+      expect(real, `${step.path} is in the recipe but brings nothing`).toBe(
+        true
+      );
+    }
+  });
+
+  it("says what to do with each file a claude-container agent brings", () => {
+    for (const step of claudeContainerSteps) {
+      expect(step.what.trim().endsWith("."), step.path).toBe(true);
+    }
   });
 
   it("says a merge does not move state", () => {
@@ -126,7 +165,7 @@ describe("the generated AGENTS.md", () => {
   )!.contents;
 
   it("carries the recipe, because that is the file the merger reads", () => {
-    for (const step of mergeSteps(n.dir)) {
+    for (const step of [...mergeSteps(n.dir), ...claudeContainerSteps]) {
       expect(agents, step.path).toContain(step.path);
     }
     expect(agents).toContain(MERGE_CAVEAT);
