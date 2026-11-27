@@ -1,5 +1,5 @@
 /**
- * Which agent `npm create dynamicagents agent` writes, one of the two menus
+ * Which agent `npm create dynamicagents agent` writes, one of the menus
  * `./` holds, read by `src/cli.ts` and by nothing a template writes. Pure, so
  * the spec needs no process.
  *

@@ -5,7 +5,7 @@
 # the `agent` user owning /workspace, setpriv, timeout, an `env` that takes
 # `-C`, git, update-ca-certificates, sandbox-shim, and a root-owned session
 # skeleton. The rest is what a session needs to build: Node, a C toolchain
-# for native modules, and ripgrep for the file tools' searches.
+# for native modules, and ripgrep, which a session's searches reach for.
 #
 # The `containers` entry in wrangler.jsonc builds this file, and passes it the
 # Claude Code version as a build var. wrangler builds for linux/amd64 and
@@ -18,11 +18,11 @@ FROM docker.io/cloudflare/sandbox:1.0.3 AS shim
 
 FROM docker.io/node:24-trixie-slim
 
-# Node 24 because every repository here pins it and CI runs it: an agent
-# building on another reports "passed in the sandbox, failed in CI".
+# Node 24, the major this project's own `.nvmrc` names, so what a session
+# builds runs on the Node this project does.
 #
 # `procps` for `pkill`, which a cancelled command is ended with. `xxd` is its
-# own package on Debian 13 — `vim-common` alone leaves none on PATH — and the
+# own package on Debian 13 (`vim-common` alone leaves none on PATH), and the
 # model reaches for it unprompted; without it, a turn goes on exit 127.
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -39,13 +39,13 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
 
 COPY --from=shim /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
 
-# pnpm and yarn for a repository that pins one, as `packageManager` does.
-# Named rather than a bare `corepack enable`, which shims `npm` too and puts a
-# network round trip in front of every `npm ci` in a repository with no pin.
+# pnpm and yarn for a project a session sets up that asks for one, as
+# `packageManager` does. Named rather than a bare `corepack enable`, which
+# shims `npm` too and puts a network round trip in front of every `npm` call.
 RUN if command -v corepack > /dev/null; then \
       corepack enable pnpm yarn; \
     else \
-      echo "corepack is not bundled with this Node build — skipping pnpm/yarn shims"; \
+      echo "corepack is not bundled with this Node build: skipping pnpm/yarn shims"; \
     fi
 
 # Claude Code, at `CLAUDE_CODE_VERSION`: the build var in wrangler.jsonc, pinned

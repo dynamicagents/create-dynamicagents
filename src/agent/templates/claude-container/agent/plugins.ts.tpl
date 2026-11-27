@@ -30,7 +30,7 @@ export const parentPlugins = (
     hostScratch({
       exec: sandboxShell(binding, sandboxName),
       workspace: () => binding.getByName(sandboxName()),
-      author: gitIdentity(env)
+      author: gitIdentity()
     })
   ];
 };

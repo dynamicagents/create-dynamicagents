@@ -95,7 +95,8 @@
   // once for one caller share its container's cores and memory. What the width
   // costs is the bill, because memory and disk are billed on
   // provisioned resources for as long as an instance runs, which is why a
-  // settled task stops its container rather than waiting out the idle deadline.
+  // sandbox nobody is using backs up and stops after the plugin's idle
+  // deadline.
   //
   // `observability` is per entry and not inherited from the Worker's: omitted,
   // an application keeps whatever it had. It is what carries the daemon's own
@@ -119,9 +120,9 @@
     }
   ],
 
-  // Where a sandbox backs its checkouts up before every stop, scratchpads
-  // included, which have no remote. A start on a new image drops the
-  // container's snapshot, and this is what brings unpushed work back.
+  // Where a sandbox backs the scratchpad up before every stop. It has no
+  // remote, and a start on a new image drops the container's snapshot, so this
+  // is what brings its files back.
   // `DirectoryBackup` writes it through this binding alone, from the Worker
   // side, so no S3 credential exists anywhere; `@dynamicagents/plugins/sandbox`
   // owns the rest. A reclaimed sandbox deletes its own.

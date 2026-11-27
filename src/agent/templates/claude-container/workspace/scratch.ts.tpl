@@ -12,10 +12,8 @@ import type { sandboxExec } from "@dynamicagents/plugins/sandbox";
  */
 
 /**
- * The repository sentinel the scratchpad is keyed on: `sandboxName(caller,
- * SCRATCH_REPO)` is the one sandbox a caller has. Angle brackets because no
- * GitHub name can contain them, so a repository a caller could name never
- * collides with it.
+ * What the scratchpad is keyed on: `sandboxName(caller, SCRATCH_REPO)` is the
+ * one sandbox a caller has.
  */
 export const SCRATCH_REPO = "<scratch>";
 

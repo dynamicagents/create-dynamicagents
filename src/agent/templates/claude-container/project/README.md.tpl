@@ -40,7 +40,7 @@ each one is.
 
 ```bash
 npm run check      # types, format, lint, typecheck, the container pins
-npm test           # the suite, in real workerd, on a scripted model
+npm test           # the suite, in real workerd, on a scripted model (Docker)
 npm run dev        # local
 ```
 
@@ -93,9 +93,9 @@ subscription rather than an API key.
    is used once Anthropic answers the one before it with a `429`. Running on
    fewer entries, or adding one, is the edit `.env.example` spells out.
 
-2. **Have Docker running.** `npm run dev` and `npm run deploy` both build the
-   container image from the `Dockerfile`, with the Claude Code version
-   `wrangler.jsonc` pins, so both need a Docker daemon on the machine.
+2. **Have Docker running.** `npm run dev`, `npm run deploy` and `npm test` all
+   build the container image from the `Dockerfile`, with the Claude Code
+   version `wrangler.jsonc` pins, so each needs a Docker daemon on the machine.
 
 3. **Choose what a session runs on.** `CLAUDE_CODE_SESSION` in `src/config.ts`
    sets every session's model, effort and time limit. Any id Claude Code's own
@@ -148,7 +148,7 @@ why: the reason is in the terminal running `npm run dev`.
 | Every task fails at once, with an AI Gateway error, on a `"<provider>/<model>"` model                                     | The `default` gateway has no key for that provider and no credits                                      | Store the provider's key on it, alias `default`, or add credits                                |
 | The reply says no Anthropic credential is configured                                                                      | Every `CLAUDE_CODE_OAUTH_TOKEN_*` is empty                                                             | `claude setup-token`, then restart                                                             |
 | The reply says every credential has reached its limit                                                                     | Each subscription's bucket is spent until its reset                                                    | Wait for the reset the reply names, or add a subscription                                      |
-| `npm run dev` fails building the image, or a session never starts                                                         | No Docker daemon is running                                                                            | Start Docker, then `npm run dev`                                                               |
+| `npm run dev` or `npm test` fails building the image, or a session never starts                                           | No Docker daemon is running                                                                            | Start Docker, then `npm run dev`                                                               |
 | An edit to `.env` changes nothing                                                                                         | `npm run dev` was not restarted, or a `.dev.vars` exists, and wrangler then ignores `.env`             | Restart, and keep one of the two files                                                         |
 
 ---

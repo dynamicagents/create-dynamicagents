@@ -9,9 +9,10 @@ import {
 } from "@dynamicagents/core/model";
 
 /**
- * The one model an agent or a sub-agent runs, as its `getModel()` returns it.
+ * The model an agent's turn runs on, as its `getModel()` returns it.
  *
- * One function for every class here, because what each call tells AI Gateway
+ * One function for every class that picks a model from `src/config.ts` (a
+ * session runs on Claude Code's instead), because what each call tells AI Gateway
  * about itself has to be spelled the same way everywhere or a log filter on it
  * silently misses the classes that spelled it differently. Both arms below are
  * handed the same fields, so a catalog slug's log row groups beside a Workers
@@ -53,7 +54,7 @@ export function agentModel(
  *
  * Every class here answers `classifyChatError` with
  * `transientChatError(error) ?? super.classifyChatError(error)`, and the reason
- * it is one function rather than a condition written out six times is the one
+ * it is one function rather than a condition in each class is the one
  * {@link agentModel} gives: a class that spelled this differently would fail a
  * turn its siblings continue, and nothing would say so.
  *
@@ -76,20 +77,20 @@ export function agentModel(
  * There is no OpenAI-specific string to match: a disconnect is a transport
  * failure, and what surfaces is the runtime's message for a connection that
  * died. `isPlatformTransientError` is the predicate `agents` maintains for
- * exactly that family — connection lost, an isolate the platform superseded, a
- * storage reset, and anything carrying the runtime's own retryable flag — and it
- * reads an `Error`, a string, and a `cause` chain, which is all three shapes
- * Think may hand a classifier. Matching strings here instead would put a copy of
+ * exactly that family (connection lost, an isolate the platform superseded, a
+ * storage reset, and anything carrying the runtime's own retryable flag), and it
+ * reads an `Error`, a string, and a `cause` chain, which is every shape Think
+ * may hand a classifier. Matching strings here instead would put a copy of
  * that list in this repo, to go stale on the next runtime message.
  *
- * It applies to every class rather than only the one whose id names an
- * `openai/*` slug. A model id is a config value (`src/config.ts`), so an agent
- * moved onto a slug tomorrow would otherwise lose this silently, and a turn cut
- * by the platform is worth continuing whichever provider answered it.
+ * It applies whichever model `src/config.ts` names, not only an `openai/*`
+ * slug. A model id is a config value, so an agent moved onto a slug tomorrow
+ * would otherwise lose this silently, and a turn cut by the platform is worth
+ * continuing whichever provider answered it.
  *
  * ## What it costs, accepted
  *
- * A **fatal** error whose message matches this family is now retried: Think
+ * A **fatal** error whose message matches this family is retried: Think
  * continues the turn up to `chatRecovery.maxAttempts`, waiting a second and
  * doubling to thirty, before ending it with the terminal message. So a
  * permanently broken connection costs that budget before the step job fails and

@@ -22,9 +22,9 @@ export { ClaudeContainerSessionChild } from "./agents/claude-container/children"
 export { ClaudeContainerSandbox } from "./agents/claude-container/sandbox";
 export { ClaudeContainerEgress } from "./agents/claude-container/egress";
 
-// `@cloudflare/sandbox`'s, and not optional: a sandbox backs its checkouts up to
-// R2 through `ctx.exports.DirectoryBackupGateway`, so nothing names it and
-// every image change would lose unpushed work without it.
+// `@cloudflare/sandbox`'s, and not optional: a sandbox backs the scratchpad up
+// to R2 through `ctx.exports.DirectoryBackupGateway`, so nothing names it and
+// every image change would lose the scratchpad without it.
 export { DirectoryBackupGateway } from "@dynamicagents/plugins/sandbox";
 
 // Core's own class, re-exported unmodified: there is nothing here to subclass,

@@ -11,10 +11,11 @@
  * (`../claude-container/files.ts`): those go through `render()` first, so any
  * other `$UPPER` text brought into them has to be bound or reworded.
  *
- * So the names are swapped as text, longest and most specific spelling first.
- * Each spelling is distinct from the others in case, separator or both, and a
- * tenant id is lowercase letters, digits and single dashes (`../names.ts`), so
- * no replacement can produce a spelling a later one would match again.
+ * So the names are swapped as text, every spelling in one pass, so that what
+ * one replacement writes is never read again by another. Passes in turn would
+ * be wrong for a tenant id whose own spellings contain the template's: the
+ * PascalCase of `xclaude-container` is `XclaudeContainer`, which holds the
+ * camelCase `claudeContainer` a later pass would rewrite a second time.
  */
 import type { AgentNames } from "../../spec";
 
@@ -39,9 +40,13 @@ export function retenant(
   n: AgentNames,
   displayName: string
 ): string {
-  let out = source;
-  for (const [from, to] of spellings(n, displayName)) {
-    out = out.split(from).join(to);
-  }
-  return out;
+  const pairs = spellings(n, displayName);
+  const to = new Map(pairs);
+  const any = new RegExp(
+    pairs
+      .map(([from]) => from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|"),
+    "g"
+  );
+  return source.replace(any, (from) => to.get(from)!);
 }

@@ -38,8 +38,8 @@ export type SandboxNamespace = DurableObjectNamespace<
  * runtime's CA, which the sandbox trusts in the system store. The author is
  * `./git-identity.ts`'s, the same one the scratchpad's own commits carry.
  */
-export function sandboxEnv(env: Env): Record<string, string> {
-  const author = gitIdentity(env);
+function sandboxEnv(): Record<string, string> {
+  const author = gitIdentity();
   return {
     CI: "1",
     HUSKY: "0",
@@ -78,7 +78,7 @@ export function sandboxConfigFor(
   const { backupPrefix, ...config } = own;
   return {
     ...config,
-    env: sandboxEnv(env),
+    env: sandboxEnv(),
     backups: {
       binding: "SANDBOX_BACKUPS",
       prefix: backupPrefix,

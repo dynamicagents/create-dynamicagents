@@ -3,14 +3,19 @@ import { env } from "cloudflare:workers";
 import type { SubAgentPrepareContext } from "@dynamicagents/core";
 import { createAgentHarness } from "@dynamicagents/core/testing";
 import { requireArtifactsStub } from "@dynamicagents/core/artifacts";
-import { ClaudeContainerSessionChild } from "@/agents/claude-container/children";
+import { sandboxNameFromRuntime } from "@dynamicagents/plugins/sandbox";
+import {
+  ClaudeContainerSessionChild,
+  scratchSandbox
+} from "@/agents/claude-container/children";
 import { shareFileTool } from "@/agents/claude-container/share";
+import { SCRATCH_DIR } from "@/workspace/scratch";
 import worker, { type TestEnv } from "./worker";
 
 /**
  * `claude-container` through the real host and workflow, on a scripted agent and
  * a scripted session: `delegate:` starts a session, whose report the agent
- * finishes on. And the two parts this agent adds to a Claude Code session: where
+ * finishes on. And the parts this agent adds to a Claude Code session: where
  * it is refused, and how a file it made reaches the person.
  */
 
@@ -51,27 +56,66 @@ describe("a task", () => {
 });
 
 describe("a session", () => {
+  /** The real `prepare`, as the parent's `claude_code` call runs it. */
+  const prepare = (caller: string) =>
+    (
+      ClaudeContainerSessionChild.spec.prepare as unknown as (
+        ctx: SubAgentPrepareContext<unknown, Env>
+      ) => Promise<Record<string, unknown>>
+    )({
+      input: { task: "anything" },
+      parent: { env: testEnv, callerKey: () => caller }
+    } as unknown as SubAgentPrepareContext<unknown, Env>);
+
   it("is refused before it starts when no scratchpad is open", async () => {
-    const prepare = ClaudeContainerSessionChild.spec.prepare as unknown as (
-      ctx: SubAgentPrepareContext<unknown, Env>
-    ) => Promise<unknown>;
     await expect(
-      prepare({
-        input: { task: "anything" },
-        parent: {
-          env: testEnv,
-          callerKey: () => `claude-container:refused:${crypto.randomUUID()}`
-        }
-      } as unknown as SubAgentPrepareContext<unknown, Env>)
+      prepare(`claude-container:refused:${crypto.randomUUID()}`)
     ).rejects.toThrow(/scratch_open/);
+  });
+
+  it("is handed the caller's sandbox under the key its model reads", async () => {
+    // What `scratch_open` records once the scratchpad exists. The record is the
+    // sandbox's storage, so it holds over a container that stays stopped, and
+    // the real `prepare` gets past its refusal. The test session's own
+    // `prepare` stands in for this one, so this is where its answer is pinned.
+    const caller = `claude-container:prepared:${crypto.randomUUID()}`;
+    const name = scratchSandbox(caller);
+    await testEnv.CLAUDE_CONTAINER_SANDBOX.getByName(name).noteCheckout({
+      dir: SCRATCH_DIR,
+      kind: "scratch"
+    });
+    const runtime = await prepare(caller);
+    expect(sandboxNameFromRuntime(runtime)).toBe(name);
+    expect(runtime.dir).toBe(SCRATCH_DIR);
   });
 });
 
 describe("share_file", () => {
   type Exec = Parameters<typeof shareFileTool>[0]["exec"];
+
+  /** What `base64 -w 0` prints for these bytes. */
+  const base64 = (bytes: Uint8Array): string => {
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary);
+  };
+
+  /**
+   * A sandbox whose file holds `content`, as the real exec answers the read:
+   * the bytes in base64. A string is the UTF-8 a file of that text holds.
+   */
   const execAnswering =
-    (stdout: string, success = true): Exec =>
-    async () => ({ success, stdout, stderr: "", exitCode: success ? 0 : 1 });
+    (content: string | Uint8Array, success = true): Exec =>
+    async () => ({
+      success,
+      stdout: base64(
+        typeof content === "string"
+          ? new TextEncoder().encode(content)
+          : content
+      ),
+      stderr: "",
+      exitCode: success ? 0 : 1
+    });
 
   const share = (exec: Exec, path: string) =>
     shareFileTool({
@@ -97,8 +141,9 @@ describe("share_file", () => {
 
   it("measures the limit in bytes, so multibyte text past it says it was cut", async () => {
     const limit = 256 * 1024;
-    // Two bytes a character: one past the limit in bytes, half of it in units.
-    const over = "é".repeat(limit / 2) + "é";
+    // Two bytes a character, then one more byte: what `head -c` reads of a
+    // longer file, one past the limit in bytes and half of it in units.
+    const over = "é".repeat(limit / 2) + "a";
     const answer = await share(execAnswering(over), "out/notes.txt");
     expect(answer).toContain("cut at 256 KB");
     const link = /https:\/\/agent\.example\/a\/([\w-]+)/.exec(answer);
@@ -112,6 +157,14 @@ describe("share_file", () => {
     const atLimit = "é".repeat((256 * 1024) / 2);
     const answer = await share(execAnswering(atLimit), "out/notes.txt");
     expect(answer).not.toContain("cut at");
+  });
+
+  it("refuses text that is not UTF-8 rather than share it mangled", async () => {
+    // Latin-1 `café`: the `é` is one byte that UTF-8 cannot read.
+    const latin1 = new Uint8Array([0x63, 0x61, 0x66, 0xe9, 0x0a]);
+    expect(await share(execAnswering(latin1), "out/notes.txt")).toMatch(
+      /not UTF-8 text/
+    );
   });
 
   it("refuses a binary file", async () => {

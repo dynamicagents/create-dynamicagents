@@ -22,7 +22,7 @@ import { SCRATCH_DIR, SCRATCH_REPO } from "@/workspace/scratch";
  *
  * `@dynamicagents/plugins/claude-code` brings the session as the sub-agent's
  * model, so what is here is only where it works and what the parent hears back.
- * It works in the scratchpad, never in a checkout: this agent clones nothing and
+ * It works in the scratchpad, never in a cloned repository: this agent clones nothing and
  * pushes nothing, so a session's work stays in the container until the parent
  * shares a file from it.
  */
@@ -75,7 +75,7 @@ function sessionFooter(result: {
 }
 
 /** What the parent receives: the session's answer, or why there is none. */
-export function sessionReport(outcome: SessionOutcome): string {
+function sessionReport(outcome: SessionOutcome): string {
   const result = outcome.session.result;
   if (!result) {
     const said = outcome.session.stderr?.trim();

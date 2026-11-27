@@ -75,7 +75,9 @@ run `npm run types` after any change to `wrangler.jsonc`.
 Nothing in the suite reaches a real model or starts a container:
 `test/worker.ts` is this Worker with the agent's and the sessions' models
 swapped for scripted ones and the sandbox over a container that stays stopped.
-What the sandbox does with a running container is plugins' to test.
+What the sandbox does with a running container is plugins' to test. The pool
+still builds the sandbox's image from `wrangler.jsonc` before any spec runs, so
+`npm test` needs Docker running, and `pretest` builds the daemon it copies in.
 
 ---
 

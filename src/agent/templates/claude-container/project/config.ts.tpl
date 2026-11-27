@@ -16,7 +16,7 @@ import type { Reconcile } from "@dynamicagents/core/workflow";
  */
 
 /** What one agent tunes: its model, and when its conversation compacts. */
-export interface AgentTuning {
+interface AgentTuning {
   /**
    * The turn's model: a `@cf/...` Workers AI id, or a `"<provider>/<model>"`
    * slug from AI Gateway's provider catalog. `src/model.ts` reads which it is
@@ -38,9 +38,9 @@ export interface AgentTuning {
    * Among the Workers AI ids: flash where the prompt it summarizes stays
    * small, the full-size model where it does not, because flash has timed out
    * (`408` / `3046`, after ~235 s) on every summary of a ~275 KB conversation,
-   * while `@cf/zai-org/glm-5.3` reads a 111k-token uncached prompt in ~34 s —
-   * and answers a share of calls with `429` / `3040` "Capacity temporarily
-   * exceeded".
+   * while `@cf/zai-org/glm-5.3` reads a 111k-token uncached prompt in ~34 s,
+   * though it answers a share of calls with `429` / `3040` "Capacity
+   * temporarily exceeded".
    */
   compactionModelId: string;
   /** Compact once the conversation's estimate crosses this. */
@@ -76,55 +76,42 @@ export const CLAUDE_CONTAINER: AgentTuning = {
 };
 
 /**
- * The size a sandbox's container starts at — 2 vCPU, 6 GiB, 8 GB
- * disk — and the base of {@link CLAUDE_CONTAINER_SANDBOX_INSTANCE}. Asked for
- * on every start, so a change reaches each sandbox at its next start.
+ * The size the sandbox's container starts at: 2 vCPU, 6 GiB, 8 GB disk. Asked
+ * for on every start, so a change reaches each sandbox at its next start.
  *
  * Deliberately not `lite`, the runtime's default: that is a size for trying
  * containers and cannot build a real project.
  *
  * The CPU is the exposure, and it was measured: on standard-1 (1/2 vCPU,
- * 4 GiB) a one-line README change took 59 minutes, of which 52 were spent at
- * **0.0% of Worker CPU** — the Worker was asleep awaiting this container the
- * whole time. A repository's `npm run check` of five sequential tools, two
- * full `tsc` runs among them, was observed taking 3-5 minutes at that size.
- *
- * What wants the second core is the build itself: it is what the measurement
- * above is about, and the work is inside the container where the Worker cannot
- * help.
+ * 4 GiB) a small change to a Node project took 59 minutes, of which 52 were
+ * spent at **0.0% of Worker CPU**: the Worker was asleep awaiting this
+ * container the whole time. A typecheck-and-lint run was observed taking 3-5
+ * minutes at that size. What wants the second core is that build, and it is
+ * inside the container where the Worker cannot help.
  *
  * It is not the more expensive choice it looks like. Cloudflare bills memory and
  * disk on *provisioned* resources for as long as an instance runs, but CPU on
- * *active usage* — so on CPU-bound work a second core costs the same vCPU-
+ * *active usage*, so on CPU-bound work a second core costs the same vCPU-
  * seconds over less wall-clock, and the memory-seconds fall with the duration.
  * Verify that against the account's container metrics rather than trusting it.
  *
+ * Beyond two, cores buy little and cost a lot. About half of a coding
+ * session's wall-clock is a project's checks and tests, one process each: the
+ * same suite took ~200 s at 2 vCPU and 80 s on a 4-vCPU CI runner. Against
+ * that, a custom size needs at least 3 GiB per vCPU, every added core bills
+ * that memory for the whole run, and every caller at work multiplies it: the
+ * containers block in `wrangler.jsonc` carries that arithmetic.
+ *
  * Memory is what to trim, because it bills for the whole run. Observed peaks
  * are ~5 GiB and ~4 GB of disk, so 6 GiB is thin headroom: a sandbox killed
- * for memory means raise `memoryMib` first. More cores are not free either —
- * a custom size needs at least 3 GiB per vCPU.
- */
-export const SANDBOX_INSTANCE: SandboxObjectConfig["instance"] = {
-  vcpu: 2,
-  memoryMib: 6144,
-  diskMb: 8000
-};
-
-/**
- * `claude-container`'s size, which is {@link SANDBOX_INSTANCE}'s. It keeps a
- * constant of its own because its workload differs, so this is where it diverges
- * if it has to.
- *
- * Cores are the only dimension that would buy it anything, and they are what it
- * cannot have cheaply. About half of a writing session's wall-clock is the
- * project's checks and tests, one process each, which no number of containers
- * speeds up: the same suite took ~200 s at 2 vCPU and 80 s on a 4-vCPU CI
- * runner. Against that, every added core bills memory for the whole run at the
- * 3 GiB-per-vCPU floor above, and every caller at work multiplies it: the
- * containers block in `wrangler.jsonc` carries that arithmetic.
+ * for memory means raise `memoryMib` first.
  */
 export const CLAUDE_CONTAINER_SANDBOX_INSTANCE: SandboxObjectConfig["instance"] =
-  SANDBOX_INSTANCE;
+  {
+    vcpu: 2,
+    memoryMib: 6144,
+    diskMb: 8000
+  };
 
 /** The CLI adapter the sandbox image's daemon serves (`src/sandbox-daemon.ts`), which each sandbox names. */
 export const SANDBOX_ADAPTER = "da-claude";
@@ -204,7 +191,7 @@ export const CLAUDE_CODE_SESSION = {
    * that tree is invisible to this Worker and multiplies whatever they say.
    * `timeoutMs` is what actually stops a run.
    *
-   * No turn ceiling sits beside them because there is none to set —
+   * No turn ceiling sits beside them because there is none to set:
    * `@dynamicagents/plugins/claude-code` does not pass `--max-turns` at all, and
    * its README carries the reason.
    */
@@ -219,16 +206,16 @@ export const CLAUDE_CODE_SESSION = {
    *
    * `bypassPermissions` because `claude -p` is headless: there is nobody to
    * answer a prompt, so any mode that would ask **auto-denies** instead. On the
-   * CLI's default a session reads the repository perfectly, cannot change one
+   * CLI's default a session reads the scratchpad perfectly, cannot change one
    * byte of it, and reports prose that reads like considered reluctance rather
-   * than a blocked tool — it exits 0 and the run is recorded as completed.
+   * than a blocked tool. It exits 0 and the run is recorded as completed.
    *
    * The container is what makes bypassing acceptable rather than merely
-   * convenient: it holds no credential — the egress gateway swaps the real one
-   * in on the Worker side — and a session already runs whatever it installs,
+   * convenient: it holds no credential (the egress gateway swaps the real one
+   * in on the Worker side), and a session already runs whatever it installs,
    * `postinstall` scripts included. Containment is the credential swap.
    */
   permissionMode: "bypassPermissions"
-  // The credentials are the host's to answer, not a setting: see
+  // The credentials are the sandbox's pool, not a setting: see
   // `src/agents/claude-container/claude-code.ts`.
 } as const satisfies Omit<ClaudeCodeConfig, "credentials">;

@@ -98,89 +98,96 @@ const VARIANTS = {
 } as const;
 
 describe.each(Object.entries(VARIANTS))("%s", (_, variant) => {
-  describe.each([TEMPLATE_TENANT, "pr-bot"])("tenant %s", (tenant) => {
-    const files = projectFiles(spec(tenant));
-    const n = names(tenant);
-    const paths = files.map((file) => file.path);
+  // `xclaude-container` because its own spellings hold the template's: its
+  // PascalCase contains `claudeContainer`, which a rename has to leave alone.
+  describe.each([TEMPLATE_TENANT, "pr-bot", "xclaude-container"])(
+    "tenant %s",
+    (tenant) => {
+      const files = projectFiles(spec(tenant));
+      const n = names(tenant);
+      const paths = files.map((file) => file.path);
 
-    it("writes a complete project, and exactly this one", () => {
-      expect(paths).toEqual([
-        ...TOP,
-        ...variant.workspace.map((name) => `src/workspace/${name}`),
-        ...variant.agent.map((name) => `${n.dir}/${name}`),
-        "test/tsconfig.json",
-        "test/worker.ts",
-        "test/edge.spec.ts",
-        ...variant.tests(tenant)
-      ]);
-    });
+      it("writes a complete project, and exactly this one", () => {
+        expect(paths).toEqual([
+          ...TOP,
+          ...variant.workspace.map((name) => `src/workspace/${name}`),
+          ...variant.agent.map((name) => `${n.dir}/${name}`),
+          "test/tsconfig.json",
+          "test/worker.ts",
+          "test/edge.spec.ts",
+          ...variant.tests(tenant)
+        ]);
+      });
 
-    it("writes one file per path, nothing empty, each ending in one newline", () => {
-      expect(new Set(paths).size).toBe(paths.length);
-      for (const file of files) {
-        expect(file.contents, file.path).not.toBe("");
-        expect(file.contents.endsWith("\n"), file.path).toBe(true);
-        expect(file.contents.endsWith("\n\n"), file.path).toBe(false);
-      }
-    });
+      it("writes one file per path, nothing empty, each ending in one newline", () => {
+        expect(new Set(paths).size).toBe(paths.length);
+        for (const file of files) {
+          expect(file.contents, file.path).not.toBe("");
+          expect(file.contents.endsWith("\n"), file.path).toBe(true);
+          expect(file.contents.endsWith("\n\n"), file.path).toBe(false);
+        }
+      });
 
-    it("leaves no token unrendered", () => {
-      expect(at(files, "wrangler.jsonc")).toContain(
-        `"compatibility_date": "${COMPATIBILITY_DATE}"`
-      );
-      expect(at(files, "wrangler.jsonc")).not.toContain("$COMPATIBILITY_DATE");
-    });
+      it("leaves no token unrendered", () => {
+        expect(at(files, "wrangler.jsonc")).toContain(
+          `"compatibility_date": "${COMPATIBILITY_DATE}"`
+        );
+        expect(at(files, "wrangler.jsonc")).not.toContain(
+          "$COMPATIBILITY_DATE"
+        );
+      });
 
-    it("names its classes, bindings and workflow from the tenant id", () => {
-      const wrangler = at(files, "wrangler.jsonc");
-      for (const name of [
-        n.hostClass,
-        n.agentClass,
-        `${n.pascal}Sandbox`,
-        `${n.screaming}_SANDBOX`,
-        n.workflowClass,
-        n.workflowBinding,
-        n.workflowName
-      ]) {
-        expect(wrangler, name).toContain(`"${name}"`);
-      }
-      const index = at(files, "src/index.ts");
-      for (const name of [
-        n.hostClass,
-        n.workflowClass,
-        n.agentClass,
-        `${n.pascal}Sandbox`,
-        `${n.pascal}Egress`,
-        ...variant.children.map((child) => `${n.pascal}${child}`)
-      ]) {
-        expect(index, name).toContain(name);
-      }
-      expect(at(files, `${n.dir}/definition.ts`)).toContain(`"${tenant}"`);
-    });
+      it("names its classes, bindings and workflow from the tenant id", () => {
+        const wrangler = at(files, "wrangler.jsonc");
+        for (const name of [
+          n.hostClass,
+          n.agentClass,
+          `${n.pascal}Sandbox`,
+          `${n.screaming}_SANDBOX`,
+          n.workflowClass,
+          n.workflowBinding,
+          n.workflowName
+        ]) {
+          expect(wrangler, name).toContain(`"${name}"`);
+        }
+        const index = at(files, "src/index.ts");
+        for (const name of [
+          n.hostClass,
+          n.workflowClass,
+          n.agentClass,
+          `${n.pascal}Sandbox`,
+          `${n.pascal}Egress`,
+          ...variant.children.map((child) => `${n.pascal}${child}`)
+        ]) {
+          expect(index, name).toContain(name);
+        }
+        expect(at(files, `${n.dir}/definition.ts`)).toContain(`"${tenant}"`);
+      });
 
-    it("asks for no GitHub token: it works on no repository", () => {
-      const secrets = /"secrets":\s*\{[\s\S]*?\]/.exec(
-        at(files, "wrangler.jsonc")
-      )?.[0];
-      expect(secrets).not.toContain('"GITHUB_TOKEN"');
-      expect(secrets).toContain('"CLAUDE_CODE_OAUTH_TOKEN_1"');
-    });
+      it("asks for no GitHub token: it works on no repository", () => {
+        const secrets = /"secrets":\s*\{[\s\S]*?\]/.exec(
+          at(files, "wrangler.jsonc")
+        )?.[0];
+        expect(secrets).not.toContain('"GITHUB_TOKEN"');
+        expect(secrets).toContain('"CLAUDE_CODE_OAUTH_TOKEN_1"');
+      });
 
-    it("pins the sandbox package to the image's shim", () => {
-      const pkg = JSON.parse(at(files, "package.json")) as {
-        dependencies: Record<string, string>;
-      };
-      const shim = /cloudflare\/sandbox:(\S+)/.exec(
-        at(files, "Dockerfile")
-      )?.[1];
-      expect(pkg.dependencies["@cloudflare/sandbox"]).toBe(shim);
-      expect(shim).toBe(CONTAINER["@cloudflare/sandbox"]);
-    });
+      it("pins the sandbox package to the image's shim", () => {
+        const pkg = JSON.parse(at(files, "package.json")) as {
+          dependencies: Record<string, string>;
+        };
+        const shim = /cloudflare\/sandbox:(\S+)/.exec(
+          at(files, "Dockerfile")
+        )?.[1];
+        expect(pkg.dependencies["@cloudflare/sandbox"]).toBe(shim);
+        expect(shim).toBe(CONTAINER["@cloudflare/sandbox"]);
+      });
 
-    it("writes every file prettier can read", async () => {
-      for (const file of files) await formatted(file.path, file.contents);
-    });
-  });
+      it("writes every file prettier can read", async () => {
+        for (const file of files) await formatted(file.path, file.contents);
+      });
+    }
+  );
 
   /**
    * The templates are laid out for `claude-container`, so with that tenant the

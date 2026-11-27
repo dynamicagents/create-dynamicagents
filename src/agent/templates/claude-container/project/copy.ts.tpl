@@ -47,7 +47,7 @@ export const WAIT_GUIDANCE = `## When you are waiting on something
  * at once and its result arrives as a later message, which a model will
  * otherwise report as done in the same breath it started it.
  *
- * The last line is from the spike: GLM once announced a step and ended the turn
+ * The last line is there because a model can announce a step and end the turn
  * without calling the tool, and nothing ends a turn but the model stopping.
  */
 export const BACKGROUND_GUIDANCE = `## Work that runs in the background

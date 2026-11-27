@@ -1,5 +1,5 @@
-# The `Dockerfile`'s build context is this directory — wrangler resolves it
-# as the Dockerfile's parent unless `image_build_context` says otherwise — so every
+# The `Dockerfile`'s build context is this directory (wrangler resolves it
+# as the Dockerfile's parent unless `image_build_context` says otherwise), so every
 # `wrangler deploy` would otherwise hand the daemon ~450 MB of node_modules and
 # dist before running a single instruction.
 #

@@ -21,7 +21,9 @@ const sorted = (map: Record<string, string>): Record<string, string> =>
  * always, the sandbox package at the exact version its `Dockerfile` names, and
  * esbuild for the daemon the image runs. `check` ends on the script that holds
  * the image's pins to what is installed, because a drift between them builds
- * and deploys cleanly and fails only in a running container.
+ * and deploys cleanly and fails only in a running container. `pretest` builds
+ * the daemon because the test pool builds the image, which copies it in, and a
+ * fresh clone has none: `container/` is ignored.
  */
 export const claudeContainerPackageJson = (spec: AgentSpec): string =>
   jsonFile({
@@ -39,6 +41,7 @@ export const claudeContainerPackageJson = (spec: AgentSpec): string =>
       lint: "eslint .",
       check:
         "wrangler types --check && prettier --check . && eslint . && tsc && tsc -p test/tsconfig.json && node scripts/verify-container-env.mjs",
+      pretest: "node scripts/build-daemon.mjs",
       test: "vitest run",
       "test:watch": "vitest",
       "verify:container-env": "node scripts/verify-container-env.mjs"

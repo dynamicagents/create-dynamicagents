@@ -141,7 +141,7 @@ export const claudeContainerSteps: readonly MergeStep[] = [
   },
   {
     path: "package.json",
-    what: "Take its `verify:container-env` script, and end `check` with it as its own `check` does."
+    what: "Take its `verify:container-env` and `pretest` scripts, and end `check` with the first as its own `check` does."
   },
   {
     path: ".env.example",

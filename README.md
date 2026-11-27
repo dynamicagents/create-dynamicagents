@@ -42,7 +42,7 @@ how to bring a second generated agent into the same Worker later.
 | `claude-container` | An agent that hands tasks to Claude Code sessions in a sandbox container and shares the files they make as links. Its sub-agent is the Claude Code session, `claude_code`, which it always has. It asks the generic blueprint's questions except the sub-agent one: its model, and the browser (`--browser`). Its tenant id and description have defaults, and its Claude Code session's model and effort are lines of its own `src/config.ts`, each with a comment saying where to find the alternatives. |
 
 `claude-container` needs Cloudflare Containers and at least one `claude
-setup-token` credential; the generated `.env.example` says how to scope it. A
+setup-token` credential; the generated `.env.example` says what each entry is. A
 pull-request coordinator built on it, which carries a change through a GitHub
 repository to a pull request ready to merge, is one of the Dynamic Agents
 examples rather than a blueprint here.

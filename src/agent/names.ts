@@ -110,7 +110,8 @@ const RESERVED = new Set([
  * are not words the language or core's classes reserve, they are names the
  * templates happen to import. A claude-container project also names its config
  * after the tenant in capitals (`CLAUDE_CONTAINER`), so `memory` lands on the
- * `MEMORY` its agent imports beside it.
+ * `MEMORY` its agent imports beside it. A global counts as much as an import:
+ * `console` as the agent's own name leaves its `console.info` calling the agent.
  *
  * So this is derived data rather than judgement. `names.spec.ts` parses every
  * module of a generated project with the TypeScript compiler, instantiates
@@ -122,9 +123,11 @@ export const COLLIDES = new Map([
   ["a2a", "a2a"],
   ["agent-model", "agentModel"],
   ["claude-code-session", "CLAUDE_CODE_SESSION"],
+  ["console", "console"],
   ["create-a2-a-worker", "createA2AWorker"],
   ["define-agent", "defineAgent"],
   ["handle-artifact-route", "handleArtifactRoute"],
+  ["host", "hostManifest"],
   ["host-manifest", "hostManifest"],
   ["label", "LABEL"],
   ["manifest", "manifest"],
@@ -133,7 +136,6 @@ export const COLLIDES = new Map([
   ["plugins", "plugins"],
   ["retry-brief", "RETRY_BRIEF"],
   ["sandbox-adapter", "SANDBOX_ADAPTER"],
-  ["sandbox-instance", "SANDBOX_INSTANCE"],
   ["sandbox-reclaim-ms", "SANDBOX_RECLAIM_MS"],
   ["sandbox-shell", "sandboxShell"],
   ["scratch-sandbox", "scratchSandbox"],

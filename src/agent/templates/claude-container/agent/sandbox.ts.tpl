@@ -20,8 +20,8 @@ import { CLAUDE_CONTAINER_EGRESS } from "./egress";
  *
  * Everything a sandbox does is `@dynamicagents/plugins/sandbox`'s. What is this
  * agent's: the hosts its sessions reach (`./egress.ts`), and the Anthropic
- * credential pool those reach Anthropic with, in this object's own storage —
- * the egress leases from the sandbox a request came from, so the container
+ * credential pool those reach Anthropic with, in this object's own storage.
+ * The egress leases from the sandbox a request came from, so the container
  * never holds a credential.
  */
 export class ClaudeContainerSandbox
@@ -46,8 +46,8 @@ export class ClaudeContainerSandbox
       label: "claude-container-sandbox",
       adapter: SANDBOX_ADAPTER,
       instance: CLAUDE_CONTAINER_SANDBOX_INSTANCE,
-      // The plugin requires one, and installs only on a repository checkout:
-      // the scratchpad is not one, so nothing here ever runs it.
+      // The plugin requires one; nothing in this project calls `startInstall`,
+      // so it never runs.
       installPlan: DEFAULT_INSTALL_PLAN,
       egress: {
         entrypoint: this.ctx.exports.ClaudeContainerEgress,
@@ -74,7 +74,7 @@ export class ClaudeContainerSandbox
 
   /**
    * Admit a session: forget the pool's marks, so its first model call asks
-   * Anthropic again — `admit` in `@dynamicagents/plugins/claude-code` says why.
+   * Anthropic again (`admit` in `@dynamicagents/plugins/claude-code` says why).
    * Called before a session is dispatched, by `prepareSession` in
    * `./children.ts`.
    */
