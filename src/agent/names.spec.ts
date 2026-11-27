@@ -401,7 +401,9 @@ describe("a tenant id the generated code already uses", () => {
       }
     }
     expect([...new Set(found)]).toEqual([]);
-  });
+    // Every candidate, every shape, every module parsed: seconds rather than
+    // milliseconds, and slower on a CI runner than the default timeout allows.
+  }, 60_000);
 
   it("leaves alone what only looks taken", () => {
     // `browser` is imported in `plugins.ts` and `worker` in the specs, but
