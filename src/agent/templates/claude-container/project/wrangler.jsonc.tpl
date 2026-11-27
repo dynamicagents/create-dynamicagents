@@ -61,9 +61,10 @@
 
   // The binding the agent's model goes through, via AI Gateway: Workers AI by
   // default, or a slug from AI Gateway's provider catalog over this same
-  // binding (`src/config.ts`), so there is no model credential in this project. `remote: true` reflects reality and suppresses wrangler's
-  // per-run warning; the test pool turns it off (vitest.config.ts) so no
-  // connection is opened per test file.
+  // binding (`src/config.ts`), so there is no model credential in this
+  // project. `remote: true` reflects reality and suppresses wrangler's per-run
+  // warning; the test pool turns it off (vitest.config.ts) so no connection is
+  // opened per test file.
   "ai": {
     "binding": "AI",
     "remote": true
@@ -159,11 +160,11 @@
   // src/agents/claude-container/host.ts names it, and the pipeline reaches the
   // host through it.
   //
-  // The sub-agent classes (the writer, reviser, planner and discovery
-  // sessions) are deliberately absent. Each is a facet created beneath its
-  // agent, so it needs no binding and no `new_sqlite_classes` entry, only its
-  // export from src/index.ts. They do need a test-only binding; see the comment
-  // in vitest.config.ts.
+  // The session class, `ClaudeContainerSessionChild` in
+  // src/agents/claude-container/children.ts, is deliberately absent. It is a
+  // facet created beneath the agent, so it needs no binding and no
+  // `new_sqlite_classes` entry, only its export from src/index.ts. It does need
+  // a test-only binding; see the comment in vitest.config.ts.
   //
   // `ARTIFACTS` is **not optional**. Core files every sub-agent note on the
   // task's transcript and posts a link instead of the note, so an agent Durable

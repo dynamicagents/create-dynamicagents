@@ -21,21 +21,22 @@ export const THINK_FILE_TOOLS: ReadonlySet<string> = new Set([
   "grep"
 ]);
 
-/** A sandbox namespace, as either agent's `Env` spells it. */
+/** The sandbox namespace, as this Worker's `Env` spells it. */
 export type SandboxNamespace = DurableObjectNamespace<
   SandboxExecHost & Rpc.DurableObjectBranded
 >;
 
 /**
- * The environment every command in a sandbox runs under — an `exec`, an
- * install, a session — beside what the egress rules add.
+ * The environment every command in a sandbox runs under, a shell's and a
+ * session's alike, beside what the egress rules add.
  *
- * `CI` and `HUSKY=0` because a cloned repository's install would otherwise
- * install its git hooks into the checkout, and every commit a session makes
- * would then run them. `--use-openssl-ca` because Node keeps its own CA list,
- * and an intercepted HTTPS host is signed by the runtime's CA, which the
- * sandbox trusts in the system store. The author is the one every other commit
- * in this Worker carries: see `./git-identity.ts`.
+ * Nobody is at the terminal: `CI` makes a tool that would stop to ask or draw
+ * a progress bar run through instead. The scratchpad is a git repository, so
+ * `HUSKY=0` keeps a package a session installs there from adding git hooks
+ * that every later commit in it would run. `--use-openssl-ca` because Node
+ * keeps its own CA list, and an intercepted HTTPS host is signed by the
+ * runtime's CA, which the sandbox trusts in the system store. The author is
+ * `./git-identity.ts`'s, the same one the scratchpad's own commits carry.
  */
 export function sandboxEnv(env: Env): Record<string, string> {
   const author = gitIdentity(env);
@@ -63,15 +64,14 @@ export function sandboxEnv(env: Env): Record<string, string> {
 }
 
 /**
- * A sandbox's config, from what is this agent's. One builder for both agents,
- * because the shared half — the environment, where checkouts are backed up —
- * has to be the same for every sandbox this Worker runs.
+ * The sandbox's config: what the class passes, plus the environment above and
+ * where the scratchpad is backed up.
  */
 export function sandboxConfigFor(
   env: Env,
   ctx: DurableObjectState,
   own: Omit<SandboxObjectConfig, "env" | "backups"> & {
-    /** Under `SANDBOX_BACKUPS`, one prefix per class. */
+    /** The prefix under `SANDBOX_BACKUPS` this class backs up to. */
     backupPrefix: string;
   }
 ): SandboxObjectConfig {
@@ -88,8 +88,8 @@ export function sandboxConfigFor(
 }
 
 /**
- * A shell for `/scratch` and this Worker's own scripts, in the sandbox `name`
- * resolves. `bash` because `/bin/sh` is dash on Debian, and a model writing
+ * A shell for the scratchpad and this Worker's own scripts, in the sandbox
+ * `name` resolves. `bash` because `/bin/sh` is dash on Debian, and a model writing
  * shell writes bash: `${PIPESTATUS[0]}` fails a line under dash with exit 2.
  */
 export function sandboxShell(binding: SandboxNamespace, name: () => string) {

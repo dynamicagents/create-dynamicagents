@@ -55,8 +55,8 @@ GATEKEEPER_ORIGINS=
 # **None of them ever enters the container.** They are read only by the egress
 # entrypoint, which leases one from the sandbox's pool and swaps it into the
 # outbound request on the Worker side of the boundary; the session itself
-# launches with a placeholder. That is what keeps them out of reach of a cloned
-# repository's `postinstall` and of any shell the model drives.
+# launches with a placeholder. That is what keeps them out of reach of any
+# package a session installs and of any shell the model drives.
 #
 # Running on fewer, or adding one, is the same edit here, in `secrets.required`
 # in wrangler.jsonc, *and* in the pool in

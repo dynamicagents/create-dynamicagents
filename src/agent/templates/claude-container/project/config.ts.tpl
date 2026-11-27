@@ -225,8 +225,8 @@ export const CLAUDE_CODE_SESSION = {
    *
    * The container is what makes bypassing acceptable rather than merely
    * convenient: it holds no credential — the egress gateway swaps the real one
-   * in on the Worker side — and `npm ci` already runs whatever `postinstall` a
-   * cloned repository ships. Containment is the credential swap.
+   * in on the Worker side — and a session already runs whatever it installs,
+   * `postinstall` scripts included. Containment is the credential swap.
    */
   permissionMode: "bypassPermissions"
   // The credentials are the host's to answer, not a setting: see

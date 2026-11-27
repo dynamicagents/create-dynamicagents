@@ -115,11 +115,12 @@ with the generic blueprint:
   stays as written;
 - the browser, as a `$when browser` region of the files that hold it.
 
-The model and the description are replaced after the tenant rename, so an
-answer is never renamed. The files that hold the browser (`wrangler.jsonc`,
+The model and the description are replaced after the tenant rename, so an answer
+is never renamed. The files that hold the browser (`wrangler.jsonc`,
 `plugins.ts`) go through `render()` for that region, which throws on any other
-`$UPPER` text, so a re-sync that brings one in has to bind or reword it. Every file is otherwise a working file of the default project. Its
-Claude Code session's model and effort are not asked for: they are lines of that
+`$UPPER` text, so a re-sync that brings one in has to bind or reword it. Every
+file is otherwise a working file of the default project. Its Claude Code
+session's model and effort are not asked for: they are lines of that
 `src/config.ts`, each commented with where to find the alternatives.
 
 The agent hands a task to a Claude Code session in a scratchpad and shares what
@@ -129,16 +130,17 @@ agent built on it and belongs in the Dynamic Agents examples, not here: this
 package writes the starting points.
 
 That costs one of the rules below, and the cost is stated rather than hidden:
-**its output is already formatted only for its own tenant id.** Another id
-moves where a line crosses the print width, in code nobody here wrote for a
-`$TOKEN`, so every install ends with the project's own prettier over the files
-it wrote, the last step of `installProject`. That is never `.`, because the
-directory may hold a user's `.vscode` or `.idea`, which a write leaves where they
-are. `finishByHand` lists the same prettier over the entries it wrote when the install does not finish. A generic project is written formatted, so the step changes nothing
-there, and `formatting.spec.ts` still holds that output to being formatted as
-written. `src/agent/claude-container.spec.ts` holds the rest: the file list, no spelling of the template's tenant left behind, the
-wiring between files, and every file already formatted for `claude-container`
-itself.
+**its output is already formatted only for its own tenant id.** Another id moves
+where a line crosses the print width, in code nobody here wrote for a `$TOKEN`,
+so every install ends with the project's own prettier over the files it wrote,
+the last step of `installProject`. That is never `.`, because the directory may
+hold a user's `.vscode` or `.idea`, which a write leaves where they are.
+`finishByHand` lists the same prettier over the entries it wrote when the
+install does not finish. A generic project is written formatted, so the step
+changes nothing there, and `formatting.spec.ts` still holds that output to being
+formatted as written. `src/agent/claude-container.spec.ts` holds the rest: the
+file list, no spelling of the template's tenant left behind, the wiring between
+files, and every file already formatted for `claude-container` itself.
 
 ### A generated file is a real file
 

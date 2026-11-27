@@ -7,9 +7,10 @@
  * blueprint: the line in `plugins.ts`, the binding in `wrangler.jsonc`, and,
  * where the blueprint's card advertises what its agent does with it, the skill
  * on the card. `claude-container`'s card advertises the task, not the tools its
- * parent has of its own, so the browser adds no skill there. A plugin declares the bindings it needs and core checks them when the
- * agent starts, so installing one without its binding is an agent that throws
- * on its first request rather than a missing feature.
+ * parent has of its own, so the browser adds no skill there. A plugin declares
+ * the bindings it needs and core checks them when the agent starts, so
+ * installing one without its binding is an agent that throws on its first
+ * request rather than a missing feature.
  *
  * That is why `browser` is alone here. The rest of `@dynamicagents/plugins` —
  * a container workspace, git and pull requests, a scratchpad, Claude Code —
