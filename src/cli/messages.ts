@@ -389,10 +389,10 @@ export const cannotRead = (named: string, problem: string): string =>
   ].join("\n");
 
 export const noDescription = (): string =>
-  "Say in one line what the agent does: it goes on its card, and it is the first line of its soul.";
+  "Say in one line what the agent does: it goes on its card.";
 
 export const describeTooLong = (): string =>
-  "One line, please — this goes on the agent's card. Say the rest in its soul once it exists.";
+  "One line, please: this goes on the agent's card.";
 
 /**
  * A description reaches a TypeScript string literal, a markdown table cell and
@@ -400,13 +400,20 @@ export const describeTooLong = (): string =>
  * where it was typed rather than written out and left to fail.
  */
 export const describeOneLine = (): string =>
-  "One line means one line: no line breaks. It goes on the agent's card and into its source. Say the rest in its soul once it exists.";
+  "One line means one line: no line breaks. It goes on the agent's card and into its source.";
 
 /**
  * An install that failed leaves a complete project, so say how to finish it:
- * the same three steps `installProject` runs.
+ * the same three steps `installProject` runs. Its format names the top-level
+ * entries this wrote rather than `.`, as the install's own does, so a `.vscode`
+ * or `.idea` already in the directory stays as it was. Naming those is exact:
+ * the directory held nothing else, so every directory among them is ours.
  */
-export const finishByHand = (dir: string, problem: string): string =>
+export const finishByHand = (
+  dir: string,
+  problem: string,
+  written: readonly string[]
+): string =>
   [
     problem,
     "",
@@ -415,7 +422,7 @@ export const finishByHand = (dir: string, problem: string): string =>
     `  cd ${dir}`,
     "  npm install",
     "  npx wrangler types",
-    "  npm run format"
+    `  npx prettier --write --ignore-unknown ${[...new Set(written.map((path) => path.split("/")[0]))].join(" ")}`
   ].join("\n");
 
 /**

@@ -431,14 +431,11 @@ try {
 }
 log.success(say.wrote(target.named));
 
+const written = planned.plan.files.map((file) => file.path);
 const installing = spinner();
 installing.start(say.installing);
 try {
-  await installProject(
-    target.dir,
-    (step) => installing.message(step),
-    planned.plan.files.map((file) => file.path)
-  );
+  await installProject(target.dir, (step) => installing.message(step), written);
   installing.stop(say.installed);
 } catch (err) {
   // The project is written and complete; it is the install that failed. So the
@@ -446,7 +443,7 @@ try {
   // those needs the dependencies this did not install, and a success outro
   // under a failure is how somebody deploys a project that never typechecked.
   installing.stop(say.installing);
-  log.error(say.finishByHand(target.named, (err as Error).message));
+  log.error(say.finishByHand(target.named, (err as Error).message, written));
   cancel(say.notInstalled(spec.name));
   process.exit(1);
 }

@@ -61,7 +61,8 @@ describe("plan", () => {
   it("refuses no description, and says what it is for", () => {
     const problem = refusal({ ...specs.full, description: "  " }, target);
     expect(problem).toMatch(/card/);
-    expect(problem).toMatch(/soul/);
+    // One message for every blueprint, and only a generic soul carries it.
+    expect(problem).not.toMatch(/soul/);
   });
 
   it("refuses a description with a line break in it", () => {

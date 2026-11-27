@@ -454,8 +454,14 @@ describe("the refusals", () => {
 });
 
 describe("finishByHand", () => {
+  const written = [
+    "src/index.ts",
+    "src/agents/support/agent.ts",
+    "package.json"
+  ];
+
   it("carries the problem and the two commands that finish it", () => {
-    const text = finishByHand("support", "npm install failed");
+    const text = finishByHand("support", "npm install failed", written);
     expect(text).toContain("npm install failed");
     expect(text).toContain("cd support");
     expect(text).toContain("npm install");
@@ -463,10 +469,23 @@ describe("finishByHand", () => {
   });
 
   it("ends with the format every install runs, after the install", () => {
-    const text = finishByHand("support", "npm install failed");
-    expect(text.indexOf("npm run format")).toBeGreaterThan(
+    const text = finishByHand("support", "npm install failed", written);
+    expect(text.indexOf("prettier --write")).toBeGreaterThan(
       text.indexOf("npm install")
     );
+  });
+
+  it("formats only the entries it wrote, never the whole directory", () => {
+    // A `.vscode` or `.idea` the directory already held is the user's, and
+    // the install's own format leaves it alone; so does this.
+    const last = finishByHand("support", "npm install failed", written)
+      .trim()
+      .split("\n")
+      .at(-1)!;
+    expect(last).toBe(
+      "  npx prettier --write --ignore-unknown src package.json"
+    );
+    expect(last).not.toMatch(/ \.$|npm run format/);
   });
 });
 
