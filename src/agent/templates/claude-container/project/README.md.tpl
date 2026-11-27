@@ -31,7 +31,7 @@ Dynamic Agents examples have a PR coordinator built on this same agent.
 ## Quick start
 
 ```bash
-npm run keygen     # one Ed25519 key for this deployment
+npm run keygen     # prints this deployment's signing key: paste it into .env
 ```
 
 Fill in `.env`: the signing key, the gatekeeper origins you accept calls from,
@@ -73,6 +73,83 @@ tenant id.
 audience from the origin a request arrives on, so a second origin advertises a
 second audience and a token minted for one will not verify against the other.
 `wrangler.jsonc` says what to change when you move to a domain of your own.
+
+---
+
+## Claude Code in the container
+
+The sessions run the Claude Code CLI inside the sandbox's container, on a Claude
+subscription rather than an API key.
+
+1. **Mint a credential.** On a machine where Claude Code is installed and signed
+   in to the subscription, run:
+
+   ```bash
+   claude setup-token
+   ```
+
+   It prints a long-lived OAuth token: put it in `.env` as
+   `CLAUDE_CODE_OAUTH_TOKEN_1`. Another subscription goes in the next entry, and
+   is used once Anthropic answers the one before it with a `429`. Running on
+   fewer entries, or adding one, is the edit `.env.example` spells out.
+
+2. **Have Docker running.** `npm run dev` and `npm run deploy` both build the
+   container image from the `Dockerfile`, with the Claude Code version
+   `wrangler.jsonc` pins, so both need a Docker daemon on the machine.
+
+3. **Choose what a session runs on.** `CLAUDE_CODE_SESSION` in `src/config.ts`
+   sets every session's model, effort and time limit. Any id Claude Code's own
+   `--model` takes works there.
+
+To see it work under `npm run dev`, ask the agent for something it has to run,
+such as a script and the file it writes: `docker ps` shows the sandbox's
+container start, and the reply links the file.
+
+The token never enters the container. The egress gateway swaps it in for a
+placeholder on the Worker side, so nothing a session runs can read it. The
+pinned version moves only to one a plugins release has verified:
+[`AGENTS.md`](AGENTS.md) says how.
+
+---
+
+## Talking to it locally
+
+`npm run dev` serves the agent at `http://localhost:8787`, and nothing reaches
+it without a gatekeeper's token. The token names the URL of the key that
+verifies it (`jku`), and the agent fetches that key only over HTTPS and only
+from an origin in `GATEKEEPER_ORIGINS`. So a gatekeeper on your own machine
+needs an HTTPS tunnel in front of it:
+
+```bash
+cloudflared tunnel --url http://localhost:<gatekeeper-port>
+```
+
+Then:
+
+1. Put the URL it prints in `.env`:
+   `GATEKEEPER_ORIGINS=["https://<name>.trycloudflare.com"]`.
+2. Give the gatekeeper that same URL as its own origin, the one its tokens name.
+3. Register `http://localhost:8787/a2a` with it, tenant `claude-container`.
+4. Restart `npm run dev`, which reads `.env` only when it starts.
+
+A quick tunnel gets a new URL every time it starts, and both `.env` and the
+gatekeeper have to follow it.
+
+## When something goes wrong
+
+A failed task tells the caller one line, `failed` in `src/copy.ts`, and never
+why: the reason is in the terminal running `npm run dev`.
+
+| what you see                                                                                                              | why                                                                                                    | what to do                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `500` on every request, `/.well-known/agent-card.json` included, with `Unexpected end of JSON input` at `parsePrivateJwk` | `A2A_SIGNING_KEY` is empty: `npm run keygen` prints the key and writes nothing                         | Paste the line it prints into `.env`, then restart                                             |
+| `401` on every call                                                                                                       | The gatekeeper's origin is not in `GATEKEEPER_ORIGINS`, or its keys cannot be fetched from that origin | Make the tunnel's URL, the gatekeeper's origin and `GATEKEEPER_ORIGINS` the same, then restart |
+| Every task fails at once, with `AiError: Model … is not available on the Workers Free plan`                               | The account wrangler is signed in to is on the free plan                                               | Move it to Workers Paid, or `npx wrangler login` to the account that is                        |
+| Every task fails at once, with an AI Gateway error, on a `"<provider>/<model>"` model                                     | The `default` gateway has no key for that provider and no credits                                      | Store the provider's key on it, alias `default`, or add credits                                |
+| The reply says no Anthropic credential is configured                                                                      | Every `CLAUDE_CODE_OAUTH_TOKEN_*` is empty                                                             | `claude setup-token`, then restart                                                             |
+| The reply says every credential has reached its limit                                                                     | Each subscription's bucket is spent until its reset                                                    | Wait for the reset the reply names, or add a subscription                                      |
+| `npm run dev` fails building the image, or a session never starts                                                         | No Docker daemon is running                                                                            | Start Docker, then `npm run dev`                                                               |
+| An edit to `.env` changes nothing                                                                                         | `npm run dev` was not restarted, or a `.dev.vars` exists, and wrangler then ignores `.env`             | Restart, and keep one of the two files                                                         |
 
 ---
 
